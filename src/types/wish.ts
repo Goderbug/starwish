@@ -7,7 +7,7 @@ export interface WishData {
   createdAt: string;
   tags?: string[];
   imageUrl?: string;
-  estimatedPrice?: string;
+  estimated_price?: string;
   notes?: string;
 }
 
