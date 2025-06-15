@@ -121,22 +121,7 @@ export const generateUserFingerprint = (): string => {
   }
 };
 
-// Auth helpers
-export const signInWithGoogle = async () => {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}`
-      }
-    });
-    return { data, error };
-  } catch (error) {
-    console.error('Google sign in error:', error);
-    return { data: null, error };
-  }
-};
-
+// Auth helpers - Google auth functions removed
 export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();

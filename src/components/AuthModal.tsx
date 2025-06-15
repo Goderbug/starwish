@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, User, Chrome } from 'lucide-react';
+import { X, Mail, Lock, User } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { supabase, signInWithGoogle } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -80,26 +80,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleGoogleAuth = async () => {
-    if (loading) return; // Prevent double submission
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) throw error;
-      
-      // Success - reset form and close modal
-      resetForm();
-      onClose();
-    } catch (error: any) {
-      console.error('Google auth error:', error);
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
   const handleClose = () => {
     if (!loading) {
       resetForm();
@@ -138,23 +118,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
-
-          {/* Google Sign In */}
-          <button
-            onClick={handleGoogleAuth}
-            disabled={loading}
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Chrome className="w-5 h-5" />
-            <span>{loading ? t('auth.loading') : t('auth.signInWithGoogle')}</span>
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="flex-1 h-px bg-white/20"></div>
-            <span className="text-sm text-gray-400">{t('auth.or')}</span>
-            <div className="flex-1 h-px bg-white/20"></div>
           </div>
 
           {/* Email Form */}
