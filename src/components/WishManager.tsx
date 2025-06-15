@@ -27,6 +27,11 @@ const WishManager: React.FC<WishManagerProps> = ({
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // 删除确认相关状态
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [wishToDelete, setWishToDelete] = useState<Wish | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const categoryIcons = {
     gift: Gift,
@@ -60,6 +65,40 @@ const WishManager: React.FC<WishManagerProps> = ({
     } else {
       setSelectedWishes(wishes.map(w => w.id));
     }
+  };
+
+  // 处理删除愿望点击
+  const handleDeleteClick = (e: React.MouseEvent, wish: Wish) => {
+    e.stopPropagation();
+    console.log('🗑️ 准备删除星愿:', wish.title);
+    setWishToDelete(wish);
+    setShowDeleteModal(true);
+  };
+
+  // 确认删除愿望
+  const confirmDelete = async () => {
+    if (!wishToDelete) return;
+    
+    setIsDeleting(true);
+    console.log('🗑️ 确认删除星愿:', wishToDelete.title);
+    
+    try {
+      await onDeleteWish(wishToDelete.id);
+      console.log('✅ 星愿删除成功');
+      setShowDeleteModal(false);
+      setWishToDelete(null);
+    } catch (error) {
+      console.error('❌ 删除星愿失败:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // 取消删除
+  const cancelDelete = () => {
+    console.log('❌ 取消删除星愿');
+    setShowDeleteModal(false);
+    setWishToDelete(null);
   };
 
   const generateShareLink = async () => {
@@ -473,11 +512,9 @@ const WishManager: React.FC<WishManagerProps> = ({
                       {new Date(wish.created_at).toLocaleDateString()}
                     </span>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteWish(wish.id);
-                      }}
+                      onClick={(e) => handleDeleteClick(e, wish)}
                       className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors touch-manipulation"
+                      title="删除星愿"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -490,6 +527,93 @@ const WishManager: React.FC<WishManagerProps> = ({
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && wishToDelete && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-900/95 backdrop-blur-sm rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/20 relative overflow-hidden">
+              {/* Background sparkles */}
+              <div className="absolute inset-0">
+                {[...Array(20)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1 h-1 bg-red-300 rounded-full animate-pulse"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animationDelay: `${Math.random() * 2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="relative z-10">
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <div className="w-16 h-16 bg-gradient-to-r from-red-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Trash2 className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-white">
+                    确认删除星愿
+                  </h3>
+                  <p className="text-gray-300 text-center text-sm sm:text-base">
+                    你确定要删除这个星愿吗？此操作无法撤销。
+                  </p>
+                </div>
+                
+                {/* Wish preview */}
+                <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${categoryColors[wishToDelete.category]} flex items-center justify-center`}>
+                      {React.createElement(categoryIcons[wishToDelete.category], { className: "w-4 h-4 text-white" })}
+                    </div>
+                    <h4 className="font-semibold text-white">{wishToDelete.title}</h4>
+                  </div>
+                  {wishToDelete.description && (
+                    <p className="text-gray-400 text-sm line-clamp-2">
+                      {wishToDelete.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Warning */}
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
+                  <p className="text-red-400 text-sm text-center">
+                    ⚠️ 删除后，这个星愿将从所有已分享的星链中移除
+                  </p>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+                  <button
+                    onClick={cancelDelete}
+                    disabled={isDeleting}
+                    className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 sm:py-4 rounded-xl transition-colors touch-manipulation disabled:opacity-50"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    disabled={isDeleting}
+                    className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white py-3 sm:py-4 rounded-xl transition-all touch-manipulation disabled:opacity-50 flex items-center justify-center space-x-2"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>删除中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>确认删除</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
