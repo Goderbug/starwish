@@ -17,45 +17,23 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    if (isSigningOut) {
-      console.log('⚠️ Sign out already in progress, ignoring...');
-      return;
-    }
+    console.log('🔄 Header: Immediate sign out triggered');
     
-    setIsSigningOut(true);
-    console.log('🔄 Header: Starting sign out process...');
-    
+    // 立即调用登出，不显示loading状态
     try {
-      const { error } = await signOut();
-      
-      if (error) {
-        console.error('❌ Header: Sign out error:', error);
-        setIsSigningOut(false);
-        // 可以在这里显示错误提示
-      } else {
-        console.log('✅ Header: Sign out completed successfully');
-        // 不要在这里重置 isSigningOut，让 useEffect 处理
-      }
+      await signOut();
+      console.log('✅ Header: Sign out completed');
     } catch (error) {
-      console.error('❌ Header: Sign out failed:', error);
-      setIsSigningOut(false);
+      console.error('❌ Header: Sign out error:', error);
+      // 即使出错也继续，让auth状态管理器处理
     }
   };
 
   const handleSignIn = () => {
     setShowAuthModal(true);
   };
-
-  // 当用户状态变为 null 时重置登出状态
-  React.useEffect(() => {
-    if (!user && isSigningOut) {
-      console.log('✅ Header: User signed out, resetting signing out state');
-      setIsSigningOut(false);
-    }
-  }, [user, isSigningOut]);
 
   return (
     <>
@@ -106,20 +84,13 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
                   <User className="w-4 h-4 text-purple-400" />
                 </div>
 
-                {/* Sign out button */}
+                {/* Sign out button - 立即响应，无loading */}
                 <button
                   onClick={handleSignOut}
-                  disabled={isSigningOut}
-                  className={`p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation ${
-                    isSigningOut ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                  className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation"
                   title={t('landing.signOut')}
                 >
-                  {isSigningOut ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <LogOut className="w-4 h-4" />
-                  )}
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (

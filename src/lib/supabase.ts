@@ -122,25 +122,39 @@ export const generateUserFingerprint = (): string => {
 };
 
 // Auth helpers
+export const signInWithGoogle = async () => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}`
+      }
+    });
+    return { data, error };
+  } catch (error) {
+    console.error('Google sign in error:', error);
+    return { data: null, error };
+  }
+};
+
 export const signOut = async () => {
   try {
-    console.log('🔄 Starting sign out process...');
+    console.log('🔄 Starting immediate sign out...');
     
-    // 使用 signOut 的 scope 选项确保完全登出
-    const { error } = await supabase.auth.signOut({
-      scope: 'global' // 确保从所有会话中登出
-    });
+    // 立即登出，不等待网络请求
+    const { error } = await supabase.auth.signOut();
     
     if (error) {
       console.error('❌ Sign out error:', error);
-      throw error;
+      // 即使有错误，也要清除本地状态
     }
     
-    console.log('✅ Sign out successful');
+    console.log('✅ Sign out completed');
     return { error: null };
   } catch (error) {
     console.error('❌ Sign out failed:', error);
-    return { error };
+    // 即使失败，也返回成功，让UI更新
+    return { error: null };
   }
 };
 

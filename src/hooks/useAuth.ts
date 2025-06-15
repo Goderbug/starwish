@@ -30,14 +30,14 @@ export const useAuth = () => {
       }
     };
 
-    // Set a timeout to prevent infinite loading
+    // Set a shorter timeout to prevent long loading
     const timeoutId = setTimeout(() => {
       if (mounted && loading) {
         console.warn('Auth loading timeout - proceeding without authentication');
         setUser(null);
         setLoading(false);
       }
-    }, 3000);
+    }, 2000); // 减少到2秒
 
     getInitialSession();
 
@@ -47,30 +47,32 @@ export const useAuth = () => {
         console.log('Auth state changed:', event, session?.user?.email);
         
         if (mounted) {
+          // 立即更新用户状态，不等待其他操作
           setUser(session?.user ?? null);
           setLoading(false);
 
-          // Create or update user profile on sign in
+          // 在后台处理用户资料更新，不阻塞UI
           if (event === 'SIGNED_IN' && session?.user) {
-            try {
-              const { error } = await supabase
-                .from('users')
-                .upsert({
-                  id: session.user.id,
-                  email: session.user.email!,
-                  name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
-                  avatar_url: session.user.user_metadata?.avatar_url,
-                  google_id: session.user.user_metadata?.provider_id,
-                }, {
-                  onConflict: 'id'
-                });
-              
-              if (error) {
-                console.error('Error creating user profile:', error);
-              }
-            } catch (error) {
-              console.error('Failed to create user profile:', error);
-            }
+            // 异步处理，不等待结果
+            supabase
+              .from('users')
+              .upsert({
+                id: session.user.id,
+                email: session.user.email!,
+                name: session.user.user_metadata?.full_name || session.user.user_metadata?.name,
+                avatar_url: session.user.user_metadata?.avatar_url,
+                google_id: session.user.user_metadata?.provider_id,
+              }, {
+                onConflict: 'id'
+              })
+              .then(({ error }) => {
+                if (error) {
+                  console.error('Error creating user profile:', error);
+                }
+              })
+              .catch((error) => {
+                console.error('Failed to create user profile:', error);
+              });
           }
         }
       }
@@ -81,7 +83,7 @@ export const useAuth = () => {
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []); // 移除loading依赖，避免无限循环
+  }, []);
 
   return { user, loading };
 };
