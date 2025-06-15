@@ -59,10 +59,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         });
         if (error) throw error;
       }
+      
+      // Reset form and close modal on success
+      setEmail('');
+      setPassword('');
+      setName('');
+      setError('');
+      setLoading(false);
       onClose();
     } catch (error: any) {
       setError(error.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -74,10 +80,16 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       const { error } = await signInWithGoogle();
       if (error) throw error;
+      
+      // Reset form and close modal on success
+      setEmail('');
+      setPassword('');
+      setName('');
+      setError('');
+      setLoading(false);
       onClose();
     } catch (error: any) {
       setError(error.message);
-    } finally {
       setLoading(false);
     }
   };
@@ -109,6 +121,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               onClick={onClose}
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
+              disabled={loading}
             >
               <X className="w-5 h-5" />
             </button>
@@ -118,10 +131,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
           <button
             onClick={handleGoogleAuth}
             disabled={loading}
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 mb-6 disabled:opacity-50"
+            className="w-full bg-white hover:bg-gray-100 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 mb-6 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Chrome className="w-5 h-5" />
-            <span>{t('auth.signInWithGoogle')}</span>
+            <span>{loading ? t('auth.loading') : t('auth.signInWithGoogle')}</span>
           </button>
 
           {/* Divider */}
@@ -147,6 +160,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                     placeholder={t('auth.namePlaceholder')}
                     className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -165,6 +179,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   placeholder={t('auth.emailPlaceholder')}
                   className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -183,6 +198,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
                   required
                   minLength={6}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -196,7 +212,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t('auth.loading') : (isSignUp ? t('auth.signUp') : t('auth.signIn'))}
             </button>
@@ -209,6 +225,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <button
                 onClick={() => setIsSignUp(!isSignUp)}
                 className="text-purple-400 hover:text-purple-300 font-medium"
+                disabled={loading}
               >
                 {isSignUp ? t('auth.signIn') : t('auth.signUp')}
               </button>
