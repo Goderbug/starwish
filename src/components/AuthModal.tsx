@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase } from '../lib/supabase';
@@ -18,6 +18,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+
+  // Listen for auth state changes to auto-close modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // User successfully signed in, close modal
+          resetForm();
+          onClose();
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -70,9 +89,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         if (error) throw error;
       }
       
-      // Success - reset form and close modal
-      resetForm();
-      onClose();
+      // Note: Modal will be closed automatically by the auth state change listener
     } catch (error: any) {
       console.error('Auth error:', error);
       setError(error.message);
