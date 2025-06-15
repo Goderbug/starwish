@@ -26,6 +26,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   const [generatedLink, setGeneratedLink] = useState('');
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const categoryIcons = {
     gift: Gift,
@@ -62,27 +63,41 @@ const WishManager: React.FC<WishManagerProps> = ({
   };
 
   const generateShareLink = async () => {
-    if (selectedWishes.length === 0 || !user) return;
+    if (selectedWishes.length === 0 || !user) {
+      setError('请先选择要分享的星愿');
+      return;
+    }
     
+    console.log('🔄 开始编织星链...', { selectedWishes, userId: user.id });
     setIsGeneratingLink(true);
-    
-    // Simulate star chain weaving animation
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    setError(null);
     
     try {
+      // Simulate star chain weaving animation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       // Create star chain
       const shareCode = generateShareCode();
+      console.log('📝 创建星链记录...', { shareCode });
+      
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
           creator_id: user.id,
           share_code: shareCode,
           is_active: true,
+          name: `星链 ${new Date().toLocaleDateString()}`,
+          description: `包含 ${selectedWishes.length} 个星愿的神秘星链`
         })
         .select()
         .single();
 
-      if (chainError) throw chainError;
+      if (chainError) {
+        console.error('❌ 创建星链失败:', chainError);
+        throw new Error(`创建星链失败: ${chainError.message}`);
+      }
+
+      console.log('✅ 星链创建成功:', starChain);
 
       // Add wishes to star chain
       const chainWishes = selectedWishes.map(wishId => ({
@@ -90,18 +105,28 @@ const WishManager: React.FC<WishManagerProps> = ({
         wish_id: wishId,
       }));
 
+      console.log('📝 添加星愿到星链...', chainWishes);
+
       const { error: wishError } = await supabase
         .from('star_chain_wishes')
         .insert(chainWishes);
 
-      if (wishError) throw wishError;
+      if (wishError) {
+        console.error('❌ 添加星愿到星链失败:', wishError);
+        throw new Error(`添加星愿失败: ${wishError.message}`);
+      }
+
+      console.log('✅ 星愿添加成功');
 
       const link = `${window.location.origin}?box=${shareCode}`;
       setGeneratedLink(link);
       setIsGeneratingLink(false);
       setShowShareModal(true);
-    } catch (error) {
-      console.error('Error creating star chain:', error);
+      
+      console.log('🎉 星链编织完成:', link);
+    } catch (error: any) {
+      console.error('❌ 编织星链失败:', error);
+      setError(error.message || '编织星链失败，请重试');
       setIsGeneratingLink(false);
     }
   };
@@ -130,6 +155,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     setGeneratedLink('');
     setSelectedWishes([]);
     setLinkCopied(false);
+    setError(null);
   };
 
   // Star chain weaving animation
@@ -214,6 +240,19 @@ const WishManager: React.FC<WishManagerProps> = ({
           </button>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
+            <p className="text-red-400 text-sm">{error}</p>
+            <button 
+              onClick={() => setError(null)}
+              className="mt-2 text-red-300 hover:text-red-200 text-xs"
+            >
+              关闭
+            </button>
+          </div>
+        )}
+
         {/* Selection controls */}
         <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -249,7 +288,8 @@ const WishManager: React.FC<WishManagerProps> = ({
                 </button>
                 <button
                   onClick={generateShareLink}
-                  className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all flex items-center space-x-1 shadow-lg touch-manipulation"
+                  disabled={isGeneratingLink}
+                  className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all flex items-center space-x-1 shadow-lg touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Share2 className="w-4 h-4" />
                   <span>{t('manager.weaveChain')}</span>
