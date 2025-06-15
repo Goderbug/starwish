@@ -85,7 +85,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
               </div>
               <h3 className="text-xl font-bold mb-2 text-white">{t('auth.signInRequired')}</h3>
               <p className="text-purple-200 text-sm sm:text-base mb-6">
-                登录后即可开始播种你的星愿，编织神秘的星链分享给特别的人
+                {t('auth.signInDescription')}
               </p>
             </div>
             
