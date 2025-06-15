@@ -9,7 +9,7 @@ export const useAuth = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session with timeout
+    // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -37,7 +37,7 @@ export const useAuth = () => {
         setUser(null);
         setLoading(false);
       }
-    }, 3000); // 3 second timeout
+    }, 3000);
 
     getInitialSession();
 
@@ -81,7 +81,7 @@ export const useAuth = () => {
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // 移除loading依赖，避免无限循环
 
   return { user, loading };
 };

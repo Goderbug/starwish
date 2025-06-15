@@ -124,18 +124,22 @@ export const generateUserFingerprint = (): string => {
 // Auth helpers
 export const signOut = async () => {
   try {
-    console.log('Attempting to sign out...');
-    const { error } = await supabase.auth.signOut();
+    console.log('🔄 Starting sign out process...');
+    
+    // 使用 signOut 的 scope 选项确保完全登出
+    const { error } = await supabase.auth.signOut({
+      scope: 'global' // 确保从所有会话中登出
+    });
     
     if (error) {
-      console.error('Sign out error:', error);
+      console.error('❌ Sign out error:', error);
       throw error;
     }
     
-    console.log('Sign out successful');
+    console.log('✅ Sign out successful');
     return { error: null };
   } catch (error) {
-    console.error('Sign out failed:', error);
+    console.error('❌ Sign out failed:', error);
     return { error };
   }
 };

@@ -20,23 +20,27 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    if (isSigningOut) return; // Prevent double clicks
+    if (isSigningOut) {
+      console.log('⚠️ Sign out already in progress, ignoring...');
+      return;
+    }
     
     setIsSigningOut(true);
-    console.log('Header: Starting sign out process...');
+    console.log('🔄 Header: Starting sign out process...');
     
     try {
       const { error } = await signOut();
+      
       if (error) {
-        console.error('Header: Sign out error:', error);
-        // Reset the signing out state on error
+        console.error('❌ Header: Sign out error:', error);
         setIsSigningOut(false);
+        // 可以在这里显示错误提示
       } else {
-        console.log('Header: Sign out completed successfully');
-        // Don't reset isSigningOut here - let the auth state change handle it
+        console.log('✅ Header: Sign out completed successfully');
+        // 不要在这里重置 isSigningOut，让 useEffect 处理
       }
     } catch (error) {
-      console.error('Header: Sign out failed:', error);
+      console.error('❌ Header: Sign out failed:', error);
       setIsSigningOut(false);
     }
   };
@@ -45,10 +49,10 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
     setShowAuthModal(true);
   };
 
-  // Reset signing out state when user becomes null (signed out)
+  // 当用户状态变为 null 时重置登出状态
   React.useEffect(() => {
     if (!user && isSigningOut) {
-      console.log('Header: User signed out, resetting signing out state');
+      console.log('✅ Header: User signed out, resetting signing out state');
       setIsSigningOut(false);
     }
   }, [user, isSigningOut]);
@@ -88,23 +92,25 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
             {loading ? (
               <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
             ) : user ? (
-              /* User info group with sign out */
-              <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20 hover:bg-white/15 transition-colors">
+              <div className="flex items-center space-x-3">
                 {/* User info */}
-                <div className="flex items-center space-x-2 px-3 py-2">
-                  <div className="w-6 h-6 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-                    <User className="w-3 h-3 text-white" />
-                  </div>
-                  <span className="text-sm font-medium text-white max-w-20 sm:max-w-32 truncate">
+                <div className="hidden sm:flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2">
+                  <User className="w-4 h-4 text-purple-400" />
+                  <span className="text-sm font-medium text-white max-w-32 truncate">
                     {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}
                   </span>
                 </div>
                 
+                {/* Mobile user indicator */}
+                <div className="sm:hidden w-8 h-8 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-purple-400" />
+                </div>
+
                 {/* Sign out button */}
                 <button
                   onClick={handleSignOut}
                   disabled={isSigningOut}
-                  className={`p-2 hover:bg-white/20 rounded-full transition-colors touch-manipulation border-l border-white/20 ${
+                  className={`p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation ${
                     isSigningOut ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                   title={t('landing.signOut')}
@@ -112,7 +118,7 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
                   {isSigningOut ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    <LogOut className="w-4 h-4 text-white" />
+                    <LogOut className="w-4 h-4" />
                   )}
                 </button>
               </div>
