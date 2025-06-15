@@ -20,14 +20,34 @@ const AppContent: React.FC = () => {
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
 
-  // Check if accessing via shared link
+  // Handle OAuth callback and check for shared links
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const boxId = urlParams.get('box');
-    if (boxId) {
-      setSharedBoxId(boxId);
-      setCurrentPage('blindbox');
-    }
+    const handleAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      // Check for OAuth callback parameters
+      const accessToken = hashParams.get('access_token') || urlParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || urlParams.get('refresh_token');
+      
+      if (accessToken) {
+        // This is an OAuth callback, clean up the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+      }
+      
+      // Check for shared box link
+      const boxId = urlParams.get('box');
+      if (boxId) {
+        setSharedBoxId(boxId);
+        setCurrentPage('blindbox');
+        // Clean up URL but keep the box parameter for sharing
+        const newUrl = `${window.location.pathname}?box=${boxId}`;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    };
+
+    handleAuthCallback();
   }, []);
 
   // Load wishes from database when user is authenticated
@@ -147,7 +167,12 @@ const AppContent: React.FC = () => {
       case 'blindbox':
         return {
           showBackButton: true,
-          onBack: () => setCurrentPage('landing'),
+          onBack: () => {
+            // Clear the box parameter when going back
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setSharedBoxId(null);
+            setCurrentPage('landing');
+          },
         };
       default:
         return {};
@@ -237,7 +262,11 @@ const AppContent: React.FC = () => {
         {currentPage === 'blindbox' && (
           <BlindBox 
             boxId={sharedBoxId}
-            onBack={() => setCurrentPage('landing')}
+            onBack={() => {
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setSharedBoxId(null);
+              setCurrentPage('landing');
+            }}
           />
         )}
       </div>
