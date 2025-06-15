@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Star, Trash2, Share2, Copy, Gift, Heart, Clock, Plus, Check } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { WishData } from '../types/wish';
+import { supabase, generateShareCode, Wish } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 interface WishManagerProps {
-  wishes: WishData[];
+  wishes: Wish[];
   onDeleteWish: (id: string) => void;
-  onUpdateWish: (id: string, updates: Partial<WishData>) => void;
+  onUpdateWish: (id: string, updates: Partial<Wish>) => void;
   onBack: () => void;
   onNavigate: (page: 'create') => void;
 }
@@ -19,6 +20,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -60,23 +62,48 @@ const WishManager: React.FC<WishManagerProps> = ({
   };
 
   const generateShareLink = async () => {
-    if (selectedWishes.length === 0) return;
+    if (selectedWishes.length === 0 || !user) return;
     
     setIsGeneratingLink(true);
     
     // Simulate star chain weaving animation
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const boxId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-    const wishData = selectedWishes.map(id => wishes.find(w => w.id === id)).filter(Boolean);
-    
-    // Store wish data for the blind box
-    localStorage.setItem(`blindbox_${boxId}`, JSON.stringify(wishData));
-    
-    const link = `${window.location.origin}${window.location.pathname}?box=${boxId}`;
-    setGeneratedLink(link);
-    setIsGeneratingLink(false);
-    setShowShareModal(true);
+    try {
+      // Create star chain
+      const shareCode = generateShareCode();
+      const { data: starChain, error: chainError } = await supabase
+        .from('star_chains')
+        .insert({
+          creator_id: user.id,
+          share_code: shareCode,
+          is_active: true,
+        })
+        .select()
+        .single();
+
+      if (chainError) throw chainError;
+
+      // Add wishes to star chain
+      const chainWishes = selectedWishes.map(wishId => ({
+        chain_id: starChain.id,
+        wish_id: wishId,
+      }));
+
+      const { error: wishError } = await supabase
+        .from('star_chain_wishes')
+        .insert(chainWishes);
+
+      if (wishError) throw wishError;
+
+      const link = `${window.location.origin}?box=${shareCode}`;
+      setGeneratedLink(link);
+      setIsGeneratingLink(false);
+      setShowShareModal(true);
+    } catch (error) {
+      console.error('Error creating star chain:', error);
+      setIsGeneratingLink(false);
+    }
   };
 
   const copyLink = async () => {
@@ -317,14 +344,14 @@ const WishManager: React.FC<WishManagerProps> = ({
                   )}
 
                   {/* Price */}
-                  {wish.estimatedPrice && (
-                    <p className="text-sm text-yellow-400 mb-4">💰 {wish.estimatedPrice}</p>
+                  {wish.estimated_price && (
+                    <p className="text-sm text-yellow-400 mb-4">💰 {wish.estimated_price}</p>
                   )}
 
                   {/* Actions */}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-400">
-                      {new Date(wish.createdAt).toLocaleDateString()}
+                      {new Date(wish.created_at).toLocaleDateString()}
                     </span>
                     <button
                       onClick={(e) => {

@@ -1,30 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Sparkles, Gift, Heart, Clock, Wand2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { WishData } from '../types/wish';
+import { supabase, generateUserFingerprint } from '../lib/supabase';
 
 interface BlindBoxProps {
   boxId: string | null;
-  wishes: WishData[];
   onBack: () => void;
 }
 
-const BlindBox: React.FC<BlindBoxProps> = ({ boxId, wishes, onBack }) => {
+const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const { t } = useLanguage();
-  const [boxWishes, setBoxWishes] = useState<WishData[]>([]);
-  const [selectedWish, setSelectedWish] = useState<WishData | null>(null);
+  const [starChain, setStarChain] = useState<any>(null);
+  const [selectedWish, setSelectedWish] = useState<any>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (boxId) {
-      const savedBoxData = localStorage.getItem(`blindbox_${boxId}`);
-      if (savedBoxData) {
-        const wishData = JSON.parse(savedBoxData);
-        setBoxWishes(wishData);
-      }
+      fetchStarChain();
     }
   }, [boxId]);
+
+  const fetchStarChain = async () => {
+    if (!boxId) return;
+
+    try {
+      // Fetch star chain with wishes
+      const { data: chainData, error: chainError } = await supabase
+        .from('star_chains')
+        .select(`
+          *,
+          creator:users(name),
+          star_chain_wishes(
+            wish:wishes(*)
+          )
+        `)
+        .eq('share_code', boxId)
+        .eq('is_active', true)
+        .single();
+
+      if (chainError) throw chainError;
+
+      if (!chainData) {
+        setError('Star chain not found or expired');
+        return;
+      }
+
+      // Check if expired
+      if (chainData.expires_at && new Date(chainData.expires_at) < new Date()) {
+        setError('Star chain has expired');
+        return;
+      }
+
+      setStarChain({
+        ...chainData,
+        wishes: chainData.star_chain_wishes?.map((scw: any) => scw.wish) || []
+      });
+    } catch (error) {
+      console.error('Error fetching star chain:', error);
+      setError('Failed to load star chain');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categoryIcons = {
     gift: Gift,
@@ -33,7 +73,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, wishes, onBack }) => {
   };
 
   const openBlindBox = async () => {
-    if (boxWishes.length === 0) return;
+    if (!starChain || starChain.wishes.length === 0) return;
     
     setIsOpening(true);
     
@@ -41,14 +81,54 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, wishes, onBack }) => {
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Randomly select a wish
-    const randomIndex = Math.floor(Math.random() * boxWishes.length);
-    const chosen = boxWishes[randomIndex];
+    const randomIndex = Math.floor(Math.random() * starChain.wishes.length);
+    const chosen = starChain.wishes[randomIndex];
     setSelectedWish(chosen);
+
+    // Record the opening
+    try {
+      const userFingerprint = generateUserFingerprint();
+      
+      // Record in blind_box_opens
+      await supabase
+        .from('blind_box_opens')
+        .insert({
+          chain_id: starChain.id,
+          wish_id: chosen.id,
+          opener_fingerprint: userFingerprint,
+          user_agent: navigator.userAgent,
+          ip_hash: 'hashed_ip' // In production, hash the real IP
+        });
+
+      // Record in user_opened_wishes for the user's collection
+      await supabase
+        .from('user_opened_wishes')
+        .insert({
+          user_fingerprint: userFingerprint,
+          wish_id: chosen.id,
+          chain_id: starChain.id,
+          creator_name: starChain.creator?.name || 'Anonymous'
+        });
+    } catch (error) {
+      console.error('Error recording opening:', error);
+    }
+
     setHasOpened(true);
     setIsOpening(false);
   };
 
-  if (!boxWishes.length && boxId) {
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !starChain) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
@@ -189,8 +269,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, wishes, onBack }) => {
               )}
 
               {/* Price */}
-              {selectedWish.estimatedPrice && (
-                <p className="text-yellow-400 text-base sm:text-lg mb-4">💰 {selectedWish.estimatedPrice}</p>
+              {selectedWish.estimated_price && (
+                <p className="text-yellow-400 text-base sm:text-lg mb-4">💰 {selectedWish.estimated_price}</p>
               )}
 
               {/* Notes */}
@@ -232,7 +312,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, wishes, onBack }) => {
             ✨ {t('blindbox.title')} ✨
           </h1>
           <p className="text-gray-400 text-sm sm:text-base">
-            {t('blindbox.prepared')} {boxWishes.length} {t('blindbox.mysterousWishes')}
+            {t('blindbox.prepared')} {starChain.wishes.length} {t('blindbox.mysterousWishes')}
           </p>
         </div>
 
