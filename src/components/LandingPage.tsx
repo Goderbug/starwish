@@ -1,40 +1,14 @@
-import React, { useState } from 'react';
-import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox, LogIn, LogOut, User } from 'lucide-react';
+import React from 'react';
+import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../hooks/useAuth';
-import { signOut } from '../lib/supabase';
-import AuthModal from './AuthModal';
 
 interface LandingPageProps {
-  onNavigate: (page: 'create' | 'manage' | 'shareHistory' | 'receivedWishes') => void;
+  onNavigate: (page: 'create' | 'manage') => void;
   wishCount: number;
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
-  const handleAuthAction = (mode: 'signin' | 'signup') => {
-    setAuthMode(mode);
-    setShowAuthModal(true);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8">
@@ -58,23 +32,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
 
       {/* Main content */}
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
-        {/* User info */}
-        {user && (
-          <div className="mb-6 flex items-center justify-center space-x-3">
-            <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-              <User className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-medium">{t('auth.welcome')}, {user.user_metadata?.full_name || user.email}</span>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors"
-              title={t('landing.signOut')}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         {/* Logo area */}
         <div className="mb-6 sm:mb-8 relative">
           <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
@@ -91,7 +48,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
         </div>
 
         {/* Stats */}
-        {user && wishCount > 0 && (
+        {wishCount > 0 && (
           <div className="mb-6 sm:mb-8 inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 sm:px-6 py-2 sm:py-3">
             <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" fill="currentColor" />
             <span className="text-xs sm:text-sm font-medium">
@@ -100,74 +57,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
           </div>
         )}
 
-        {/* Auth required message for non-authenticated users */}
-        {!user && (
-          <div className="mb-8 p-4 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
-            <p className="text-purple-200 text-sm sm:text-base mb-4">
-              {t('auth.signInRequired')}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => handleAuthAction('signin')}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>{t('landing.signIn')}</span>
-              </button>
-              <button
-                onClick={() => handleAuthAction('signup')}
-                className="flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl border border-white/20 hover:border-white/30 transition-all"
-              >
-                <User className="w-4 h-4" />
-                <span>{t('auth.signUp')}</span>
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Action buttons */}
+        <div className="flex flex-col gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 px-4">
+          <button
+            onClick={() => onNavigate('create')}
+            className="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 min-h-[56px]"
+          >
+            <Plus className="w-5 h-5" />
+            <span>{t('landing.plantWish')}</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
 
-        {/* Action buttons - only show if authenticated */}
-        {user && (
-          <div className="flex flex-col gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 px-4">
+          {wishCount > 0 && (
             <button
-              onClick={() => onNavigate('create')}
-              className="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 min-h-[56px]"
+              onClick={() => onNavigate('manage')}
+              className="group w-full sm:w-auto bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center space-x-2 min-h-[56px]"
             >
-              <Plus className="w-5 h-5" />
-              <span>{t('landing.plantWish')}</span>
+              <List className="w-5 h-5" />
+              <span>{t('landing.manageWishes')}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-
-            {wishCount > 0 && (
-              <button
-                onClick={() => onNavigate('manage')}
-                className="group w-full sm:w-auto bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center space-x-2 min-h-[56px]"
-              >
-                <List className="w-5 h-5" />
-                <span>{t('landing.manageWishes')}</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            )}
-
-            {/* Additional navigation buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <button
-                onClick={() => onNavigate('shareHistory')}
-                className="group flex-1 sm:flex-initial bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white px-4 sm:px-6 py-3 rounded-full text-sm sm:text-base font-medium transition-all border border-white/10 hover:border-white/20 flex items-center justify-center space-x-2"
-              >
-                <History className="w-4 h-4" />
-                <span>{t('landing.shareHistory')}</span>
-              </button>
-              
-              <button
-                onClick={() => onNavigate('receivedWishes')}
-                className="group flex-1 sm:flex-initial bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white px-4 sm:px-6 py-3 rounded-full text-sm sm:text-base font-medium transition-all border border-white/10 hover:border-white/20 flex items-center justify-center space-x-2"
-              >
-                <Inbox className="w-4 h-4" />
-                <span>{t('landing.receivedWishes')}</span>
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Features showcase */}
         <div className="grid grid-cols-1 gap-6 sm:gap-8 px-2">
@@ -210,14 +121,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
       <div className="fixed top-20 right-20 opacity-20 hidden sm:block">
         <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-300 animate-bounce" />
       </div>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        mode={authMode}
-        onModeChange={setAuthMode}
-      />
     </div>
   );
 };

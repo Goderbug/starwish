@@ -1,22 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { LanguageProvider } from './contexts/LanguageContext';
-import { useAuth } from './hooks/useAuth';
 import Header from './components/Header';
 import LandingPage from './components/LandingPage';
 import CreateWish from './components/CreateWish';
 import WishManager from './components/WishManager';
 import BlindBox from './components/BlindBox';
-import ShareHistory from './components/ShareHistory';
-import ReceivedWishes from './components/ReceivedWishes';
-import { supabase, Wish } from './lib/supabase';
+import { WishData } from './types/wish';
 import { useLanguage } from './contexts/LanguageContext';
 
 // Main App component wrapped with language context
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox' | 'shareHistory' | 'receivedWishes'>('landing');
-  const [wishes, setWishes] = useState<Wish[]>([]);
+  const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox'>('landing');
+  const [wishes, setWishes] = useState<WishData[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
 
   // Check if accessing via shared link
@@ -29,80 +25,36 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Load wishes from database when user is authenticated
+  // Load wishes from localStorage
   useEffect(() => {
-    if (user) {
-      fetchWishes();
-    } else {
-      setWishes([]);
+    const savedWishes = localStorage.getItem('starwishes');
+    if (savedWishes) {
+      setWishes(JSON.parse(savedWishes));
     }
-  }, [user]);
+  }, []);
 
-  const fetchWishes = async () => {
-    if (!user) return;
+  // Save wishes to localStorage
+  useEffect(() => {
+    localStorage.setItem('starwishes', JSON.stringify(wishes));
+  }, [wishes]);
 
-    try {
-      const { data, error } = await supabase
-        .from('wishes')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setWishes(data || []);
-    } catch (error) {
-      console.error('Error fetching wishes:', error);
-    }
+  const addWish = (wish: Omit<WishData, 'id' | 'createdAt'>) => {
+    const newWish: WishData = {
+      ...wish,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+    };
+    setWishes(prev => [...prev, newWish]);
   };
 
-  const addWish = async (wishData: Omit<Wish, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('wishes')
-        .insert({
-          ...wishData,
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      setWishes(prev => [data, ...prev]);
-    } catch (error) {
-      console.error('Error adding wish:', error);
-    }
+  const deleteWish = (id: string) => {
+    setWishes(prev => prev.filter(wish => wish.id !== id));
   };
 
-  const deleteWish = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('wishes')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      setWishes(prev => prev.filter(wish => wish.id !== id));
-    } catch (error) {
-      console.error('Error deleting wish:', error);
-    }
-  };
-
-  const updateWish = async (id: string, updates: Partial<Wish>) => {
-    try {
-      const { error } = await supabase
-        .from('wishes')
-        .update(updates)
-        .eq('id', id);
-
-      if (error) throw error;
-      setWishes(prev => prev.map(wish => 
-        wish.id === id ? { ...wish, ...updates } : wish
-      ));
-    } catch (error) {
-      console.error('Error updating wish:', error);
-    }
+  const updateWish = (id: string, updates: Partial<WishData>) => {
+    setWishes(prev => prev.map(wish => 
+      wish.id === id ? { ...wish, ...updates } : wish
+    ));
   };
 
   // Get header props based on current page
@@ -121,18 +73,6 @@ const AppContent: React.FC = () => {
           title: t('manager.title'),
           subtitle: `${wishes.length} ${t('manager.subtitle')}`,
         };
-      case 'shareHistory':
-        return {
-          showBackButton: true,
-          onBack: () => setCurrentPage('landing'),
-          title: t('shareHistory.title'),
-        };
-      case 'receivedWishes':
-        return {
-          showBackButton: true,
-          onBack: () => setCurrentPage('landing'),
-          title: t('receivedWishes.title'),
-        };
       case 'blindbox':
         return {
           showBackButton: true,
@@ -142,17 +82,6 @@ const AppContent: React.FC = () => {
         return {};
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white overflow-hidden">
@@ -184,14 +113,14 @@ const AppContent: React.FC = () => {
           />
         )}
 
-        {currentPage === 'create' && user && (
+        {currentPage === 'create' && (
           <CreateWish 
             onAddWish={addWish}
             onBack={() => setCurrentPage('landing')}
           />
         )}
 
-        {currentPage === 'manage' && user && (
+        {currentPage === 'manage' && (
           <WishManager 
             wishes={wishes}
             onDeleteWish={deleteWish}
@@ -201,17 +130,10 @@ const AppContent: React.FC = () => {
           />
         )}
 
-        {currentPage === 'shareHistory' && user && (
-          <ShareHistory />
-        )}
-
-        {currentPage === 'receivedWishes' && (
-          <ReceivedWishes />
-        )}
-
         {currentPage === 'blindbox' && (
           <BlindBox 
             boxId={sharedBoxId}
+            wishes={wishes}
             onBack={() => setCurrentPage('landing')}
           />
         )}

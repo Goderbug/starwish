@@ -46,7 +46,7 @@ const CreateWish: React.FC<CreateWishProps> = ({ onAddWish, onBack }) => {
       category: formData.category,
       priority: formData.priority,
       tags: [],
-      estimated_price: '',
+      estimatedPrice: '',
       notes: '',
     });
 
