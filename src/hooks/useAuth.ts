@@ -67,17 +67,10 @@ export const useAuth = () => {
               
               if (error) {
                 console.error('Error creating user profile:', error);
-              } else {
-                console.log('User profile created/updated successfully');
               }
             } catch (error) {
               console.error('Failed to create user profile:', error);
             }
-          }
-
-          // Handle sign out
-          if (event === 'SIGNED_OUT') {
-            console.log('User signed out');
           }
         }
       }

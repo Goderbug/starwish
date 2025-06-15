@@ -127,7 +127,7 @@ export const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin
+        redirectTo: `${window.location.origin}`
       }
     });
     return { data, error };
@@ -140,8 +140,6 @@ export const signInWithGoogle = async () => {
 export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
-    // Clear URL parameters after sign out
-    window.history.replaceState({}, document.title, window.location.pathname);
     return { error };
   } catch (error) {
     console.error('Sign out error:', error);
