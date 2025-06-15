@@ -63,16 +63,40 @@ const WishManager: React.FC<WishManagerProps> = ({
   };
 
   const generateShareLink = async () => {
-    if (selectedWishes.length === 0 || !user) {
+    if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
     }
     
-    console.log('🔄 开始编织星链...', { selectedWishes, userId: user.id });
+    if (!user) {
+      setError('请先登录');
+      return;
+    }
+    
+    console.log('🔄 开始编织星链...', { 
+      selectedWishes, 
+      userId: user.id,
+      wishCount: selectedWishes.length 
+    });
+    
     setIsGeneratingLink(true);
     setError(null);
     
     try {
+      // 检查 Supabase 连接
+      const { data: testData, error: testError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      
+      if (testError) {
+        console.error('❌ Supabase 连接测试失败:', testError);
+        throw new Error('数据库连接失败，请检查网络连接');
+      }
+      
+      console.log('✅ Supabase 连接正常');
+      
       // Simulate star chain weaving animation
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -80,21 +104,25 @@ const WishManager: React.FC<WishManagerProps> = ({
       const shareCode = generateShareCode();
       console.log('📝 创建星链记录...', { shareCode });
       
+      const starChainData = {
+        creator_id: user.id,
+        share_code: shareCode,
+        is_active: true,
+        name: `星链 ${new Date().toLocaleDateString()}`,
+        description: `包含 ${selectedWishes.length} 个星愿的神秘星链`
+      };
+      
+      console.log('📝 星链数据:', starChainData);
+      
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
-        .insert({
-          creator_id: user.id,
-          share_code: shareCode,
-          is_active: true,
-          name: `星链 ${new Date().toLocaleDateString()}`,
-          description: `包含 ${selectedWishes.length} 个星愿的神秘星链`
-        })
+        .insert(starChainData)
         .select()
         .single();
 
       if (chainError) {
         console.error('❌ 创建星链失败:', chainError);
-        throw new Error(`创建星链失败: ${chainError.message}`);
+        throw new Error(`创建星链失败: ${chainError.message || '未知错误'}`);
       }
 
       console.log('✅ 星链创建成功:', starChain);
@@ -113,7 +141,12 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       if (wishError) {
         console.error('❌ 添加星愿到星链失败:', wishError);
-        throw new Error(`添加星愿失败: ${wishError.message}`);
+        // 如果添加星愿失败，尝试删除已创建的星链
+        await supabase
+          .from('star_chains')
+          .delete()
+          .eq('id', starChain.id);
+        throw new Error(`添加星愿失败: ${wishError.message || '未知错误'}`);
       }
 
       console.log('✅ 星愿添加成功');
