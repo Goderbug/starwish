@@ -29,13 +29,14 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
       const { error } = await signOut();
       if (error) {
         console.error('Header: Sign out error:', error);
-        // You might want to show an error message to the user here
+        // Reset the signing out state on error
+        setIsSigningOut(false);
       } else {
         console.log('Header: Sign out completed successfully');
+        // Don't reset isSigningOut here - let the auth state change handle it
       }
     } catch (error) {
       console.error('Header: Sign out failed:', error);
-    } finally {
       setIsSigningOut(false);
     }
   };
@@ -43,6 +44,14 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
   const handleSignIn = () => {
     setShowAuthModal(true);
   };
+
+  // Reset signing out state when user becomes null (signed out)
+  React.useEffect(() => {
+    if (!user && isSigningOut) {
+      console.log('Header: User signed out, resetting signing out state');
+      setIsSigningOut(false);
+    }
+  }, [user, isSigningOut]);
 
   return (
     <>

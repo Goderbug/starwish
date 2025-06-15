@@ -54,11 +54,16 @@ export const useAuth = () => {
         
         if (mounted) {
           clearTimeout(timeoutId);
-          setUser(session?.user ?? null);
-          setLoading(false);
-
-          // Create or update user profile on sign in
-          if (event === 'SIGNED_IN' && session?.user) {
+          
+          // Handle different auth events
+          if (event === 'SIGNED_OUT') {
+            console.log('User signed out, clearing user state');
+            setUser(null);
+          } else if (event === 'SIGNED_IN' && session?.user) {
+            console.log('User signed in:', session.user.email);
+            setUser(session.user);
+            
+            // Create or update user profile on sign in
             try {
               const { error } = await supabase
                 .from('users')
@@ -78,7 +83,12 @@ export const useAuth = () => {
             } catch (error) {
               console.error('Failed to create user profile:', error);
             }
+          } else {
+            // For other events, just update the user state
+            setUser(session?.user ?? null);
           }
+          
+          setLoading(false);
         }
       }
     );
