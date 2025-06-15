@@ -14,7 +14,7 @@ import { useLanguage } from './contexts/LanguageContext';
 // Main App component wrapped with language context
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
+  const { user, loading, error } = useAuth();
   const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox' | 'shareHistory' | 'receivedWishes'>('landing');
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
@@ -149,6 +149,12 @@ const AppContent: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">Loading...</p>
+          {error && (
+            <div className="mt-4 p-4 bg-red-500/20 border border-red-500/30 rounded-xl max-w-md">
+              <p className="text-red-400 text-sm">Error: {error}</p>
+              <p className="text-red-300 text-xs mt-2">Please check your database connection and try refreshing the page.</p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -212,7 +218,6 @@ const AppContent: React.FC = () => {
         {currentPage === 'blindbox' && (
           <BlindBox 
             boxId={sharedBoxId}
-            wishes={[]} // This will be handled by the BlindBox component
             onBack={() => setCurrentPage('landing')}
           />
         )}
