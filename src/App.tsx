@@ -18,6 +18,7 @@ const AppContent: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox' | 'shareHistory' | 'receivedWishes'>('landing');
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
+  const [appError, setAppError] = useState<string | null>(null);
 
   // Check if accessing via shared link
   useEffect(() => {
@@ -48,10 +49,17 @@ const AppContent: React.FC = () => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching wishes:', error);
+        setAppError('Failed to load wishes');
+        return;
+      }
+      
       setWishes(data || []);
+      setAppError(null);
     } catch (error) {
       console.error('Error fetching wishes:', error);
+      setAppError('Failed to connect to database');
     }
   };
 
@@ -72,6 +80,7 @@ const AppContent: React.FC = () => {
       setWishes(prev => [data, ...prev]);
     } catch (error) {
       console.error('Error adding wish:', error);
+      setAppError('Failed to create wish');
     }
   };
 
@@ -86,6 +95,7 @@ const AppContent: React.FC = () => {
       setWishes(prev => prev.filter(wish => wish.id !== id));
     } catch (error) {
       console.error('Error deleting wish:', error);
+      setAppError('Failed to delete wish');
     }
   };
 
@@ -102,6 +112,7 @@ const AppContent: React.FC = () => {
       ));
     } catch (error) {
       console.error('Error updating wish:', error);
+      setAppError('Failed to update wish');
     }
   };
 
@@ -149,6 +160,7 @@ const AppContent: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">Loading...</p>
+          <p className="text-gray-500 text-sm mt-2">Connecting to services...</p>
         </div>
       </div>
     );
@@ -158,6 +170,19 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white overflow-hidden">
       {/* Header */}
       <Header {...getHeaderProps()} />
+
+      {/* Error message */}
+      {appError && (
+        <div className="fixed top-20 left-4 right-4 z-40 bg-red-500/20 border border-red-500/30 rounded-xl p-4 backdrop-blur-sm">
+          <p className="text-red-400 text-sm text-center">{appError}</p>
+          <button 
+            onClick={() => setAppError(null)}
+            className="absolute top-2 right-2 text-red-400 hover:text-red-300"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Animated background stars */}
       <div className="fixed inset-0 pointer-events-none">
