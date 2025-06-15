@@ -31,6 +31,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return; // Prevent double submission
+    
     setLoading(true);
     setError('');
 
@@ -79,6 +81,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   const handleGoogleAuth = async () => {
+    if (loading) return; // Prevent double submission
+    
     setLoading(true);
     setError('');
     
@@ -220,7 +224,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !email.trim() || !password.trim() || (isSignUp && !name.trim())}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? t('auth.loading') : (isSignUp ? t('auth.signUp') : t('auth.signIn'))}
