@@ -139,22 +139,20 @@ export const signInWithGoogle = async () => {
 
 export const signOut = async () => {
   try {
-    console.log('🔄 Starting immediate sign out...');
+    console.log('🔄 Starting sign out...');
     
-    // 立即登出，不等待网络请求
     const { error } = await supabase.auth.signOut();
     
     if (error) {
       console.error('❌ Sign out error:', error);
-      // 即使有错误，也要清除本地状态
+    } else {
+      console.log('✅ Sign out completed successfully');
     }
     
-    console.log('✅ Sign out completed');
-    return { error: null };
+    return { error };
   } catch (error) {
     console.error('❌ Sign out failed:', error);
-    // 即使失败，也返回成功，让UI更新
-    return { error: null };
+    return { error };
   }
 };
 

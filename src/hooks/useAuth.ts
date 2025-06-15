@@ -37,22 +37,24 @@ export const useAuth = () => {
         setUser(null);
         setLoading(false);
       }
-    }, 2000); // 减少到2秒
+    }, 3000); // 3秒超时
 
     getInitialSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         if (mounted) {
-          // 立即更新用户状态，不等待其他操作
-          setUser(session?.user ?? null);
+          // 立即更新用户状态
+          const newUser = session?.user ?? null;
+          setUser(newUser);
           setLoading(false);
 
           // 在后台处理用户资料更新，不阻塞UI
           if (event === 'SIGNED_IN' && session?.user) {
+            console.log('✅ User signed in, updating profile...');
             // 异步处理，不等待结果
             supabase
               .from('users')
@@ -68,11 +70,17 @@ export const useAuth = () => {
               .then(({ error }) => {
                 if (error) {
                   console.error('Error creating user profile:', error);
+                } else {
+                  console.log('✅ User profile updated successfully');
                 }
               })
               .catch((error) => {
                 console.error('Failed to create user profile:', error);
               });
+          }
+
+          if (event === 'SIGNED_OUT') {
+            console.log('🚪 User signed out');
           }
         }
       }

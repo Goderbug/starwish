@@ -36,22 +36,12 @@ const AppContent: React.FC = () => {
       fetchWishes();
     } else {
       setWishes([]);
-      // 当用户登出时，确保回到首页
-      if (currentPage !== 'blindbox') {
+      // 只有在非盲盒页面且用户确实登出时才跳转到首页
+      if (currentPage !== 'blindbox' && !loading) {
         setCurrentPage('landing');
       }
     }
-  }, [user]);
-
-  // 监听用户状态变化，确保页面状态正确
-  useEffect(() => {
-    if (!user && !loading) {
-      // 用户未登录且不在加载状态时，确保在首页
-      if (currentPage !== 'blindbox' && currentPage !== 'landing') {
-        setCurrentPage('landing');
-      }
-    }
-  }, [user, loading, currentPage]);
+  }, [user, loading]);
 
   const fetchWishes = async () => {
     if (!user) return;

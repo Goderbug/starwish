@@ -19,15 +19,13 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleSignOut = async () => {
-    console.log('🔄 Header: Immediate sign out triggered');
+    console.log('🔄 Header: Sign out triggered');
     
-    // 立即调用登出，不显示loading状态
     try {
       await signOut();
       console.log('✅ Header: Sign out completed');
     } catch (error) {
       console.error('❌ Header: Sign out error:', error);
-      // 即使出错也继续，让auth状态管理器处理
     }
   };
 
@@ -84,7 +82,7 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
                   <User className="w-4 h-4 text-purple-400" />
                 </div>
 
-                {/* Sign out button - 立即响应，无loading */}
+                {/* Sign out button */}
                 <button
                   onClick={handleSignOut}
                   className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation"
