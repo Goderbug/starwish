@@ -8,42 +8,36 @@ export const useAuth = () => {
 
   useEffect(() => {
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
 
-    // Get initial session with faster timeout
+    // Get initial session with timeout
     const getInitialSession = async () => {
       try {
-        // Set a shorter timeout for better UX
-        timeoutId = setTimeout(() => {
-          if (mounted && loading) {
-            console.warn('Auth loading timeout - proceeding without authentication');
-            setUser(null);
-            setLoading(false);
-          }
-        }, 2000); // Reduced from 5s to 2s
-
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
-          clearTimeout(timeoutId);
-          
           if (error) {
             console.error('Auth session error:', error);
-            setUser(null);
-          } else {
-            setUser(session?.user ?? null);
           }
+          setUser(session?.user ?? null);
           setLoading(false);
         }
       } catch (error) {
         console.error('Failed to get session:', error);
         if (mounted) {
-          clearTimeout(timeoutId);
           setUser(null);
           setLoading(false);
         }
       }
     };
+
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Auth loading timeout - proceeding without authentication');
+        setUser(null);
+        setLoading(false);
+      }
+    }, 3000); // 3 second timeout
 
     getInitialSession();
 
@@ -53,17 +47,11 @@ export const useAuth = () => {
         console.log('Auth state changed:', event, session?.user?.email);
         
         if (mounted) {
-          clearTimeout(timeoutId);
-          
-          // Handle different auth events
-          if (event === 'SIGNED_OUT') {
-            console.log('User signed out, clearing user state');
-            setUser(null);
-          } else if (event === 'SIGNED_IN' && session?.user) {
-            console.log('User signed in:', session.user.email);
-            setUser(session.user);
-            
-            // Create or update user profile on sign in
+          setUser(session?.user ?? null);
+          setLoading(false);
+
+          // Create or update user profile on sign in
+          if (event === 'SIGNED_IN' && session?.user) {
             try {
               const { error } = await supabase
                 .from('users')
@@ -83,12 +71,7 @@ export const useAuth = () => {
             } catch (error) {
               console.error('Failed to create user profile:', error);
             }
-          } else {
-            // For other events, just update the user state
-            setUser(session?.user ?? null);
           }
-          
-          setLoading(false);
         }
       }
     );
@@ -98,7 +81,7 @@ export const useAuth = () => {
       clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, []); // Remove loading dependency to prevent infinite loop
+  }, []);
 
   return { user, loading };
 };
