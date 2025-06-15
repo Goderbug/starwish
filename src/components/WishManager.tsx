@@ -63,18 +63,24 @@ const WishManager: React.FC<WishManagerProps> = ({
   };
 
   const generateShareLink = async () => {
+    console.log('🔄 开始编织星链检查...', { 
+      selectedWishesCount: selectedWishes.length,
+      user: user ? { id: user.id, email: user.email } : null,
+      userExists: !!user
+    });
+
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
     }
     
     if (!user) {
-      setError('请先登录');
+      console.error('❌ 用户未登录');
+      setError('请先登录后再创建星链');
       return;
     }
     
-    console.log('🔄 开始编织星链...', { 
-      selectedWishes, 
+    console.log('✅ 用户验证通过，开始编织星链...', { 
       userId: user.id,
       wishCount: selectedWishes.length 
     });
@@ -83,24 +89,64 @@ const WishManager: React.FC<WishManagerProps> = ({
     setError(null);
     
     try {
-      // 检查 Supabase 连接
-      const { data: testData, error: testError } = await supabase
+      // 验证用户是否存在于数据库中
+      console.log('🔍 验证用户数据库记录...');
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('id')
+        .select('id, email')
         .eq('id', user.id)
         .single();
       
-      if (testError) {
-        console.error('❌ Supabase 连接测试失败:', testError);
-        throw new Error('数据库连接失败，请检查网络连接');
+      if (userError) {
+        console.error('❌ 用户数据库验证失败:', userError);
+        // 如果用户不存在，尝试创建用户记录
+        console.log('🔄 尝试创建用户记录...');
+        const { error: createUserError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            email: user.email!,
+            name: user.user_metadata?.full_name || user.user_metadata?.name,
+            avatar_url: user.user_metadata?.avatar_url,
+            google_id: user.user_metadata?.provider_id,
+          });
+        
+        if (createUserError) {
+          console.error('❌ 创建用户记录失败:', createUserError);
+          throw new Error('用户验证失败，请重新登录');
+        }
+        console.log('✅ 用户记录创建成功');
+      } else {
+        console.log('✅ 用户数据库验证成功:', userData);
       }
       
-      console.log('✅ Supabase 连接正常');
+      // 验证选中的星愿是否属于当前用户
+      console.log('🔍 验证星愿所有权...');
+      const { data: wishData, error: wishError } = await supabase
+        .from('wishes')
+        .select('id, user_id, title')
+        .in('id', selectedWishes)
+        .eq('user_id', user.id);
       
-      // Simulate star chain weaving animation
+      if (wishError) {
+        console.error('❌ 星愿验证失败:', wishError);
+        throw new Error('验证星愿失败，请重试');
+      }
+      
+      if (!wishData || wishData.length !== selectedWishes.length) {
+        console.error('❌ 星愿数量不匹配:', { 
+          expected: selectedWishes.length, 
+          actual: wishData?.length || 0 
+        });
+        throw new Error('部分星愿不存在或不属于您，请刷新页面重试');
+      }
+      
+      console.log('✅ 星愿验证成功:', wishData.map(w => w.title));
+      
+      // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Create star chain
+      // 创建星链
       const shareCode = generateShareCode();
       console.log('📝 创建星链记录...', { shareCode });
       
@@ -127,7 +173,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       console.log('✅ 星链创建成功:', starChain);
 
-      // Add wishes to star chain
+      // 添加星愿到星链
       const chainWishes = selectedWishes.map(wishId => ({
         chain_id: starChain.id,
         wish_id: wishId,
@@ -135,18 +181,18 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       console.log('📝 添加星愿到星链...', chainWishes);
 
-      const { error: wishError } = await supabase
+      const { error: wishError2 } = await supabase
         .from('star_chain_wishes')
         .insert(chainWishes);
 
-      if (wishError) {
-        console.error('❌ 添加星愿到星链失败:', wishError);
+      if (wishError2) {
+        console.error('❌ 添加星愿到星链失败:', wishError2);
         // 如果添加星愿失败，尝试删除已创建的星链
         await supabase
           .from('star_chains')
           .delete()
           .eq('id', starChain.id);
-        throw new Error(`添加星愿失败: ${wishError.message || '未知错误'}`);
+        throw new Error(`添加星愿失败: ${wishError2.message || '未知错误'}`);
       }
 
       console.log('✅ 星愿添加成功');
@@ -321,7 +367,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                 </button>
                 <button
                   onClick={generateShareLink}
-                  disabled={isGeneratingLink}
+                  disabled={isGeneratingLink || !user}
                   className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all flex items-center space-x-1 shadow-lg touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Share2 className="w-4 h-4" />
