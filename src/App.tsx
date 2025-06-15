@@ -8,6 +8,7 @@ import WishManager from './components/WishManager';
 import BlindBox from './components/BlindBox';
 import ShareHistory from './components/ShareHistory';
 import ReceivedWishes from './components/ReceivedWishes';
+import AuthModal from './components/AuthModal';
 import { supabase, Wish } from './lib/supabase';
 import { useLanguage } from './contexts/LanguageContext';
 
@@ -19,6 +20,9 @@ const AppContent: React.FC = () => {
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
+  
+  // 统一的登录模态框状态
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Check if accessing via shared link
   useEffect(() => {
@@ -33,20 +37,24 @@ const AppContent: React.FC = () => {
   // Load wishes from database when user is authenticated
   useEffect(() => {
     if (user) {
+      console.log('✅ 用户已登录，加载星愿数据:', user.email);
       fetchWishes();
     } else {
+      console.log('❌ 用户未登录，清空星愿数据');
       setWishes([]);
-      // 只有在非盲盒页面且用户确实登出时才跳转到首页
+      // 只有在非盲盒页面且不在加载状态时才跳转到首页
       if (currentPage !== 'blindbox' && !loading) {
+        console.log('🔄 跳转到首页');
         setCurrentPage('landing');
       }
     }
-  }, [user, loading]);
+  }, [user, loading, currentPage]);
 
   const fetchWishes = async () => {
     if (!user) return;
 
     try {
+      console.log('📡 获取星愿数据...');
       const { data, error } = await supabase
         .from('wishes')
         .select('*')
@@ -54,23 +62,29 @@ const AppContent: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching wishes:', error);
+        console.error('❌ 获取星愿失败:', error);
         setAppError('Failed to load wishes');
         return;
       }
       
+      console.log('✅ 星愿数据加载成功:', data?.length || 0, '个');
       setWishes(data || []);
       setAppError(null);
     } catch (error) {
-      console.error('Error fetching wishes:', error);
+      console.error('❌ 获取星愿异常:', error);
       setAppError('Failed to connect to database');
     }
   };
 
   const addWish = async (wishData: Omit<Wish, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user) {
+      console.error('❌ 用户未登录，无法创建星愿');
+      setShowAuthModal(true);
+      return;
+    }
 
     try {
+      console.log('📝 创建新星愿:', wishData.title);
       const { data, error } = await supabase
         .from('wishes')
         .insert({
@@ -82,13 +96,14 @@ const AppContent: React.FC = () => {
 
       if (error) throw error;
       
+      console.log('✅ 星愿创建成功:', data.title);
       // 更新本地状态
       setWishes(prev => [data, ...prev]);
       
       // 创建成功后跳转到管理页面
       setCurrentPage('manage');
     } catch (error) {
-      console.error('Error adding wish:', error);
+      console.error('❌ 创建星愿失败:', error);
       setAppError('Failed to create wish');
     }
   };
@@ -125,6 +140,12 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // 统一的登录处理函数
+  const handleAuthRequired = () => {
+    console.log('🔐 需要登录，显示登录模态框');
+    setShowAuthModal(true);
+  };
+
   // Get header props based on current page
   const getHeaderProps = () => {
     switch (currentPage) {
@@ -133,6 +154,7 @@ const AppContent: React.FC = () => {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
           title: t('create.title'),
+          onAuthRequired: handleAuthRequired,
         };
       case 'manage':
         return {
@@ -140,26 +162,32 @@ const AppContent: React.FC = () => {
           onBack: () => setCurrentPage('landing'),
           title: t('manager.title'),
           subtitle: `${wishes.length} ${t('manager.subtitle')}`,
+          onAuthRequired: handleAuthRequired,
         };
       case 'shareHistory':
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
           title: t('shareHistory.title'),
+          onAuthRequired: handleAuthRequired,
         };
       case 'receivedWishes':
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
           title: t('receivedWishes.title'),
+          onAuthRequired: handleAuthRequired,
         };
       case 'blindbox':
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
+          onAuthRequired: handleAuthRequired,
         };
       default:
-        return {};
+        return {
+          onAuthRequired: handleAuthRequired,
+        };
     }
   };
 
@@ -214,17 +242,18 @@ const AppContent: React.FC = () => {
           <LandingPage 
             onNavigate={setCurrentPage}
             wishCount={wishes.length}
+            onAuthRequired={handleAuthRequired}
           />
         )}
 
-        {currentPage === 'create' && user && (
+        {currentPage === 'create' && (
           <CreateWish 
             onAddWish={addWish}
             onBack={() => setCurrentPage('landing')}
           />
         )}
 
-        {currentPage === 'manage' && user && (
+        {currentPage === 'manage' && (
           <WishManager 
             wishes={wishes}
             onDeleteWish={deleteWish}
@@ -234,7 +263,7 @@ const AppContent: React.FC = () => {
           />
         )}
 
-        {currentPage === 'shareHistory' && user && (
+        {currentPage === 'shareHistory' && (
           <ShareHistory />
         )}
 
@@ -249,6 +278,14 @@ const AppContent: React.FC = () => {
           />
         )}
       </div>
+
+      {/* 统一的登录模态框 */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode="signin"
+        onModeChange={() => {}}
+      />
     </div>
   );
 };

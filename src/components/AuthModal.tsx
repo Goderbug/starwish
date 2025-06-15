@@ -23,10 +23,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (!isOpen) return;
 
+    console.log('🔐 登录模态框已打开，监听认证状态变化...');
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('🔄 模态框内认证状态变化:', event, session?.user?.email || '无用户');
         if (event === 'SIGNED_IN' && session?.user) {
-          // User successfully signed in, close modal
+          console.log('✅ 登录成功，关闭模态框');
           resetForm();
           onClose();
         }
@@ -52,11 +55,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     e.preventDefault();
     if (loading) return; // Prevent double submission
     
+    console.log('🔄 开始邮箱认证:', { isSignUp, email });
     setLoading(true);
     setError('');
 
     try {
       if (isSignUp) {
+        console.log('📝 注册新用户...');
         // Sign up and automatically sign in
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -70,28 +75,32 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         
         if (error) throw error;
         
+        console.log('✅ 注册成功:', data.user?.email);
+        
         // If sign up is successful, automatically sign in
         if (data.user && !data.user.email_confirmed_at) {
-          // For development, we'll auto-confirm the email
-          // In production, you might want to handle email confirmation differently
+          console.log('🔄 自动登录...');
           const { error: signInError } = await supabase.auth.signInWithPassword({
             email,
             password,
           });
           if (signInError) throw signInError;
+          console.log('✅ 自动登录成功');
         }
       } else {
+        console.log('🔑 用户登录...');
         // Sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        console.log('✅ 登录成功');
       }
       
       // Note: Modal will be closed automatically by the auth state change listener
     } catch (error: any) {
-      console.error('Auth error:', error);
+      console.error('❌ 认证失败:', error);
       setError(error.message);
       setLoading(false);
     }
@@ -99,6 +108,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   const handleClose = () => {
     if (!loading) {
+      console.log('🔐 关闭登录模态框');
       resetForm();
       onClose();
     }

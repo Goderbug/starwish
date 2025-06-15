@@ -1,21 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
-import AuthModal from './AuthModal';
 
 interface LandingPageProps {
   onNavigate: (page: 'create' | 'manage' | 'shareHistory' | 'receivedWishes') => void;
   wishCount: number;
+  onAuthRequired: () => void;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount, onAuthRequired }) => {
   const { t } = useLanguage();
   const { user, loading } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const handleAuthAction = () => {
-    setShowAuthModal(true);
+  const handleNavigate = (page: 'create' | 'manage' | 'shareHistory' | 'receivedWishes') => {
+    if (!user) {
+      console.log('🔐 需要登录才能访问:', page);
+      onAuthRequired();
+      return;
+    }
+    console.log('✅ 导航到:', page);
+    onNavigate(page);
   };
 
   if (loading) {
@@ -90,7 +95,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
             </div>
             
             <button
-              onClick={handleAuthAction}
+              onClick={onAuthRequired}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-xl transition-all touch-manipulation font-medium"
             >
               {t('landing.signIn')}
@@ -102,7 +107,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
         {user && (
           <div className="flex flex-col gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 px-4">
             <button
-              onClick={() => onNavigate('create')}
+              onClick={() => handleNavigate('create')}
               className="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 min-h-[56px]"
             >
               <Plus className="w-5 h-5" />
@@ -112,7 +117,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
 
             {wishCount > 0 && (
               <button
-                onClick={() => onNavigate('manage')}
+                onClick={() => handleNavigate('manage')}
                 className="group w-full sm:w-auto bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center space-x-2 min-h-[56px]"
               >
                 <List className="w-5 h-5" />
@@ -124,7 +129,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
             {/* Additional navigation buttons */}
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <button
-                onClick={() => onNavigate('shareHistory')}
+                onClick={() => handleNavigate('shareHistory')}
                 className="group flex-1 sm:flex-initial bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white px-4 sm:px-6 py-3 rounded-full text-sm sm:text-base font-medium transition-all border border-white/10 hover:border-white/20 flex items-center justify-center space-x-2"
               >
                 <History className="w-4 h-4" />
@@ -132,7 +137,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
               </button>
               
               <button
-                onClick={() => onNavigate('receivedWishes')}
+                onClick={() => handleNavigate('receivedWishes')}
                 className="group flex-1 sm:flex-initial bg-white/5 backdrop-blur-sm hover:bg-white/10 text-white px-4 sm:px-6 py-3 rounded-full text-sm sm:text-base font-medium transition-all border border-white/10 hover:border-white/20 flex items-center justify-center space-x-2"
               >
                 <Inbox className="w-4 h-4" />
@@ -183,14 +188,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
       <div className="fixed top-20 right-20 opacity-20 hidden sm:block">
         <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-300 animate-bounce" />
       </div>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        mode="signin"
-        onModeChange={() => {}}
-      />
     </div>
   );
 };
