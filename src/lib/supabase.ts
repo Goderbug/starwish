@@ -121,13 +121,21 @@ export const generateUserFingerprint = (): string => {
   }
 };
 
-// Auth helpers - Google auth functions removed
+// Auth helpers
 export const signOut = async () => {
   try {
+    console.log('Attempting to sign out...');
     const { error } = await supabase.auth.signOut();
-    return { error };
+    
+    if (error) {
+      console.error('Sign out error:', error);
+      throw error;
+    }
+    
+    console.log('Sign out successful');
+    return { error: null };
   } catch (error) {
-    console.error('Sign out error:', error);
+    console.error('Sign out failed:', error);
     return { error };
   }
 };

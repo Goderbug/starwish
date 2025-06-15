@@ -17,9 +17,27 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
   const { user, loading } = useAuth();
   const { t } = useLanguage();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut();
+    if (isSigningOut) return; // Prevent double clicks
+    
+    setIsSigningOut(true);
+    console.log('Header: Starting sign out process...');
+    
+    try {
+      const { error } = await signOut();
+      if (error) {
+        console.error('Header: Sign out error:', error);
+        // You might want to show an error message to the user here
+      } else {
+        console.log('Header: Sign out completed successfully');
+      }
+    } catch (error) {
+      console.error('Header: Sign out failed:', error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   const handleSignIn = () => {
@@ -76,10 +94,17 @@ const Header: React.FC<HeaderProps> = ({ showBackButton, onBack, title, subtitle
                 {/* Sign out button */}
                 <button
                   onClick={handleSignOut}
-                  className="p-2 hover:bg-white/20 rounded-full transition-colors touch-manipulation border-l border-white/20"
+                  disabled={isSigningOut}
+                  className={`p-2 hover:bg-white/20 rounded-full transition-colors touch-manipulation border-l border-white/20 ${
+                    isSigningOut ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                   title={t('landing.signOut')}
                 >
-                  <LogOut className="w-4 h-4 text-white" />
+                  {isSigningOut ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <LogOut className="w-4 h-4 text-white" />
+                  )}
                 </button>
               </div>
             ) : (
