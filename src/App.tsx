@@ -36,8 +36,22 @@ const AppContent: React.FC = () => {
       fetchWishes();
     } else {
       setWishes([]);
+      // 当用户登出时，确保回到首页
+      if (currentPage !== 'blindbox') {
+        setCurrentPage('landing');
+      }
     }
   }, [user]);
+
+  // 监听用户状态变化，确保页面状态正确
+  useEffect(() => {
+    if (!user && !loading) {
+      // 用户未登录且不在加载状态时，确保在首页
+      if (currentPage !== 'blindbox' && currentPage !== 'landing') {
+        setCurrentPage('landing');
+      }
+    }
+  }, [user, loading, currentPage]);
 
   const fetchWishes = async () => {
     if (!user) return;
@@ -77,7 +91,12 @@ const AppContent: React.FC = () => {
         .single();
 
       if (error) throw error;
+      
+      // 更新本地状态
       setWishes(prev => [data, ...prev]);
+      
+      // 创建成功后跳转到管理页面
+      setCurrentPage('manage');
     } catch (error) {
       console.error('Error adding wish:', error);
       setAppError('Failed to create wish');
@@ -154,7 +173,6 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Improved loading state with faster timeout
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
