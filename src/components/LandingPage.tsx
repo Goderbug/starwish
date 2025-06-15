@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox, LogIn, LogOut, User } from 'lucide-react';
+import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../hooks/useAuth';
-import { signOut } from '../lib/supabase';
 import AuthModal from './AuthModal';
 
 interface LandingPageProps {
@@ -15,10 +14,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
   const { user, loading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   const handleAuthAction = (mode: 'signin' | 'signup') => {
     setAuthMode(mode);
@@ -58,23 +53,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
 
       {/* Main content */}
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
-        {/* User info */}
-        {user && (
-          <div className="mb-6 flex items-center justify-center space-x-3">
-            <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2">
-              <User className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-medium">{t('auth.welcome')}, {user.user_metadata?.full_name || user.email}</span>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors"
-              title={t('landing.signOut')}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        )}
-
         {/* Logo area */}
         <div className="mb-6 sm:mb-8 relative">
           <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
@@ -102,23 +80,28 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
 
         {/* Auth required message for non-authenticated users */}
         {!user && (
-          <div className="mb-8 p-4 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
-            <p className="text-purple-200 text-sm sm:text-base mb-4">
-              {t('auth.signInRequired')}
-            </p>
+          <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
+            <div className="mb-4">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Star className="w-8 h-8 text-white" fill="currentColor" />
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-white">{t('auth.signInRequired')}</h3>
+              <p className="text-purple-200 text-sm sm:text-base mb-6">
+                登录后即可开始播种你的星愿，编织神秘的星链分享给特别的人
+              </p>
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={() => handleAuthAction('signin')}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all"
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
               >
-                <LogIn className="w-4 h-4" />
                 <span>{t('landing.signIn')}</span>
               </button>
               <button
                 onClick={() => handleAuthAction('signup')}
-                className="flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl border border-white/20 hover:border-white/30 transition-all"
+                className="flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl border border-white/20 hover:border-white/30 transition-all touch-manipulation"
               >
-                <User className="w-4 h-4" />
                 <span>{t('auth.signUp')}</span>
               </button>
             </div>
