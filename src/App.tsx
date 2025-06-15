@@ -212,6 +212,7 @@ const AppContent: React.FC = () => {
         {currentPage === 'blindbox' && (
           <BlindBox 
             boxId={sharedBoxId}
+            wishes={[]} // This will be handled by the BlindBox component
             onBack={() => setCurrentPage('landing')}
           />
         )}
