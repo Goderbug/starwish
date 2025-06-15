@@ -21,6 +21,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setName('');
+    setError('');
+    setLoading(false);
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -60,14 +68,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         if (error) throw error;
       }
       
-      // Reset form and close modal on success
-      setEmail('');
-      setPassword('');
-      setName('');
-      setError('');
-      setLoading(false);
+      // Success - reset form and close modal
+      resetForm();
       onClose();
     } catch (error: any) {
+      console.error('Auth error:', error);
       setError(error.message);
       setLoading(false);
     }
@@ -81,16 +86,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       const { error } = await signInWithGoogle();
       if (error) throw error;
       
-      // Reset form and close modal on success
-      setEmail('');
-      setPassword('');
-      setName('');
-      setError('');
-      setLoading(false);
+      // Success - reset form and close modal
+      resetForm();
       onClose();
     } catch (error: any) {
+      console.error('Google auth error:', error);
       setError(error.message);
       setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    if (!loading) {
+      resetForm();
+      onClose();
     }
   };
 
@@ -119,7 +128,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               {isSignUp ? t('auth.signUp') : t('auth.signIn')}
             </h2>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 hover:bg-white/10 rounded-full transition-colors"
               disabled={loading}
             >
