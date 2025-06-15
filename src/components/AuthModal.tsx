@@ -10,13 +10,14 @@ interface AuthModalProps {
   onModeChange: (mode: 'signin' | 'signup') => void;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChange }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   if (!isOpen) return null;
 
@@ -26,8 +27,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChan
     setError('');
 
     try {
-      if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+      if (isSignUp) {
+        // Sign up and automatically sign in
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -36,8 +38,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChan
             }
           }
         });
+        
         if (error) throw error;
+        
+        // If sign up is successful, automatically sign in
+        if (data.user && !data.user.email_confirmed_at) {
+          // For development, we'll auto-confirm the email
+          // In production, you might want to handle email confirmation differently
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (signInError) throw signInError;
+        }
       } else {
+        // Sign in
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -89,7 +104,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChan
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-pink-300 bg-clip-text text-transparent">
-              {mode === 'signin' ? t('auth.signIn') : t('auth.signUp')}
+              {isSignUp ? t('auth.signUp') : t('auth.signIn')}
             </h2>
             <button
               onClick={onClose}
@@ -106,7 +121,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChan
             className="w-full bg-white hover:bg-gray-100 text-gray-900 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 mb-6 disabled:opacity-50"
           >
             <Chrome className="w-5 h-5" />
-            <span>{mode === 'signin' ? t('auth.signInWithGoogle') : t('auth.signUpWithGoogle')}</span>
+            <span>{t('auth.signInWithGoogle')}</span>
           </button>
 
           {/* Divider */}
@@ -118,7 +133,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChan
 
           {/* Email Form */}
           <form onSubmit={handleEmailAuth} className="space-y-4">
-            {mode === 'signup' && (
+            {isSignUp && (
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-300">
                   {t('auth.name')}
@@ -183,19 +198,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onModeChan
               disabled={loading}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-3 rounded-xl font-medium transition-all disabled:opacity-50"
             >
-              {loading ? t('auth.loading') : (mode === 'signin' ? t('auth.signIn') : t('auth.signUp'))}
+              {loading ? t('auth.loading') : (isSignUp ? t('auth.signUp') : t('auth.signIn'))}
             </button>
           </form>
 
           {/* Mode Switch */}
           <div className="mt-6 text-center">
             <p className="text-gray-400 text-sm">
-              {mode === 'signin' ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
+              {isSignUp ? t('auth.hasAccount') : t('auth.noAccount')}{' '}
               <button
-                onClick={() => onModeChange(mode === 'signin' ? 'signup' : 'signin')}
+                onClick={() => setIsSignUp(!isSignUp)}
                 className="text-purple-400 hover:text-purple-300 font-medium"
               >
-                {mode === 'signin' ? t('auth.signUp') : t('auth.signIn')}
+                {isSignUp ? t('auth.signIn') : t('auth.signUp')}
               </button>
             </p>
           </div>

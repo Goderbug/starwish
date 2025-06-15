@@ -65,9 +65,9 @@ const LanguageSwitcher: React.FC = () => {
         />
       </button>
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu - Fixed positioning to align left */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 min-w-[160px] bg-gray-900/95 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-2 min-w-[160px] bg-gray-900/95 backdrop-blur-sm rounded-2xl border border-white/20 shadow-xl overflow-hidden z-50">
           <div className="py-2">
             {availableLanguages.map((lang) => (
               <button

@@ -13,10 +13,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
   const { t } = useLanguage();
   const { user, loading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
-  const handleAuthAction = (mode: 'signin' | 'signup') => {
-    setAuthMode(mode);
+  const handleAuthAction = () => {
     setShowAuthModal(true);
   };
 
@@ -91,20 +89,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
               </p>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={() => handleAuthAction('signin')}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
-              >
-                <span>{t('landing.signIn')}</span>
-              </button>
-              <button
-                onClick={() => handleAuthAction('signup')}
-                className="flex items-center justify-center space-x-2 bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl border border-white/20 hover:border-white/30 transition-all touch-manipulation"
-              >
-                <span>{t('auth.signUp')}</span>
-              </button>
-            </div>
+            <button
+              onClick={handleAuthAction}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 py-3 rounded-xl transition-all touch-manipulation font-medium"
+            >
+              {t('landing.signIn')}
+            </button>
           </div>
         )}
 
@@ -198,8 +188,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount }) => {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        mode={authMode}
-        onModeChange={setAuthMode}
+        mode="signin"
+        onModeChange={() => {}}
       />
     </div>
   );
