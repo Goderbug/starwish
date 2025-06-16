@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkles, Gift, Heart, Clock, Wand2 } from 'lucide-react';
+import { Star, Sparkles, Gift, Heart, Clock, Wand2, UserPlus, LogIn } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateUserFingerprint } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
+import AuthModal from './AuthModal';
 
 interface BlindBoxProps {
   boxId: string | null;
@@ -10,12 +12,15 @@ interface BlindBoxProps {
 
 const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [starChain, setStarChain] = useState<any>(null);
   const [selectedWish, setSelectedWish] = useState<any>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [userFingerprint] = useState(() => generateUserFingerprint());
 
   useEffect(() => {
     if (boxId) {
@@ -27,39 +32,68 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     if (!boxId) return;
 
     try {
-      // Fetch star chain with wishes
+      console.log('🔍 获取星链数据:', boxId);
+      
+      // 获取星链基本信息
       const { data: chainData, error: chainError } = await supabase
         .from('star_chains')
         .select(`
           *,
-          creator:users(name),
-          star_chain_wishes(
-            wish:wishes(*)
-          )
+          creator:users(name, email)
         `)
         .eq('share_code', boxId)
         .eq('is_active', true)
         .single();
 
-      if (chainError) throw chainError;
+      if (chainError) {
+        console.error('❌ 获取星链失败:', chainError);
+        throw chainError;
+      }
 
       if (!chainData) {
+        console.error('❌ 星链不存在');
         setError('Star chain not found or expired');
         return;
       }
 
-      // Check if expired
+      console.log('✅ 星链数据获取成功:', chainData);
+
+      // 检查是否过期
       if (chainData.expires_at && new Date(chainData.expires_at) < new Date()) {
+        console.error('❌ 星链已过期');
         setError('Star chain has expired');
+        return;
+      }
+
+      // 获取星链中的星愿
+      const { data: wishesData, error: wishesError } = await supabase
+        .from('star_chain_wishes')
+        .select(`
+          wish:wishes(*)
+        `)
+        .eq('chain_id', chainData.id);
+
+      if (wishesError) {
+        console.error('❌ 获取星愿失败:', wishesError);
+        throw wishesError;
+      }
+
+      const wishes = wishesData?.map((item: any) => item.wish).filter(Boolean) || [];
+      console.log('✅ 星愿数据获取成功:', wishes.length, '个星愿');
+
+      if (wishes.length === 0) {
+        console.error('❌ 星链中没有星愿');
+        setError('No wishes found in this star chain');
         return;
       }
 
       setStarChain({
         ...chainData,
-        wishes: chainData.star_chain_wishes?.map((scw: any) => scw.wish) || []
+        wishes: wishes
       });
-    } catch (error) {
-      console.error('Error fetching star chain:', error);
+
+    } catch (error: any) {
+      console.error('❌ 获取星链数据失败:', error);
       setError('Failed to load star chain');
     } finally {
       setLoading(false);
@@ -73,49 +107,127 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   };
 
   const openBlindBox = async () => {
-    if (!starChain || starChain.wishes.length === 0) return;
+    if (!starChain || !starChain.wishes || starChain.wishes.length === 0) {
+      console.error('❌ 没有可用的星愿');
+      setError('No wishes available');
+      return;
+    }
     
+    console.log('🎁 开始打开盲盒，可用星愿:', starChain.wishes.length);
     setIsOpening(true);
+    setError(null);
     
-    // Dramatic opening animation
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // Randomly select a wish
-    const randomIndex = Math.floor(Math.random() * starChain.wishes.length);
-    const chosen = starChain.wishes[randomIndex];
-    setSelectedWish(chosen);
-
-    // Record the opening
     try {
-      const userFingerprint = generateUserFingerprint();
+      // 显示开启动画
+      await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Record in blind_box_opens
-      await supabase
-        .from('blind_box_opens')
-        .insert({
-          chain_id: starChain.id,
-          wish_id: chosen.id,
-          opener_fingerprint: userFingerprint,
-          user_agent: navigator.userAgent,
-          ip_hash: 'hashed_ip' // In production, hash the real IP
-        });
+      // 随机选择一个星愿
+      const randomIndex = Math.floor(Math.random() * starChain.wishes.length);
+      const chosen = starChain.wishes[randomIndex];
+      
+      console.log('🎯 随机选中星愿:', chosen.title, '索引:', randomIndex);
+      setSelectedWish(chosen);
 
-      // Record in user_opened_wishes for the user's collection
-      await supabase
+      // 记录开启行为
+      try {
+        console.log('📝 记录盲盒开启...');
+        
+        // 记录到 blind_box_opens 表
+        const { error: openError } = await supabase
+          .from('blind_box_opens')
+          .insert({
+            chain_id: starChain.id,
+            wish_id: chosen.id,
+            opener_fingerprint: userFingerprint,
+            user_agent: navigator.userAgent,
+            ip_hash: 'hashed_ip' // 在生产环境中应该使用真实的IP哈希
+          });
+
+        if (openError) {
+          console.error('❌ 记录开启失败:', openError);
+        } else {
+          console.log('✅ 开启记录成功');
+        }
+
+        // 记录到用户的收到星愿列表（使用指纹识别）
+        const { error: userWishError } = await supabase
+          .from('user_opened_wishes')
+          .insert({
+            user_fingerprint: userFingerprint,
+            wish_id: chosen.id,
+            chain_id: starChain.id,
+            creator_name: starChain.creator?.name || 'Anonymous'
+          });
+
+        if (userWishError) {
+          console.error('❌ 保存用户星愿失败:', userWishError);
+        } else {
+          console.log('✅ 用户星愿保存成功');
+        }
+
+      } catch (recordError) {
+        console.error('❌ 记录开启异常:', recordError);
+        // 不影响主流程，继续显示结果
+      }
+
+      setHasOpened(true);
+      
+    } catch (error: any) {
+      console.error('❌ 打开盲盒失败:', error);
+      setError('Failed to open blind box');
+    } finally {
+      setIsOpening(false);
+    }
+  };
+
+  // 处理注册后的数据迁移
+  const handlePostRegistration = async () => {
+    if (!user || !selectedWish) return;
+
+    try {
+      console.log('🔄 开始迁移匿名用户数据到注册用户...');
+      
+      // 检查是否已经存在该用户的记录
+      const { data: existingRecord } = await supabase
+        .from('user_opened_wishes')
+        .select('id')
+        .eq('wish_id', selectedWish.id)
+        .eq('chain_id', starChain.id)
+        .eq('user_fingerprint', userFingerprint)
+        .single();
+
+      if (existingRecord) {
+        console.log('✅ 数据已存在，无需迁移');
+        return;
+      }
+
+      // 创建新的记录关联到注册用户
+      const { error } = await supabase
         .from('user_opened_wishes')
         .insert({
           user_fingerprint: userFingerprint,
-          wish_id: chosen.id,
+          wish_id: selectedWish.id,
           chain_id: starChain.id,
           creator_name: starChain.creator?.name || 'Anonymous'
         });
-    } catch (error) {
-      console.error('Error recording opening:', error);
-    }
 
-    setHasOpened(true);
-    setIsOpening(false);
+      if (error) {
+        console.error('❌ 数据迁移失败:', error);
+      } else {
+        console.log('✅ 数据迁移成功');
+      }
+
+    } catch (error) {
+      console.error('❌ 数据迁移异常:', error);
+    }
   };
+
+  // 监听用户登录状态变化
+  useEffect(() => {
+    if (user && hasOpened && selectedWish) {
+      handlePostRegistration();
+    }
+  }, [user, hasOpened, selectedWish]);
 
   if (loading) {
     return (
@@ -136,7 +248,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold mb-2 text-gray-300">{t('blindbox.expired')}</h2>
-          <p className="text-gray-400 mb-6 text-sm sm:text-base">{t('blindbox.expiredDesc')}</p>
+          <p className="text-gray-400 mb-6 text-sm sm:text-base">{error || t('blindbox.expiredDesc')}</p>
           <button
             onClick={onBack}
             className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl transition-colors touch-manipulation"
@@ -290,7 +402,28 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             </p>
           </div>
 
-          {/* Action button - only "Done" */}
+          {/* Registration prompt for anonymous users */}
+          {!user && (
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl p-6 mb-6 border border-blue-400/30">
+              <div className="mb-4">
+                <UserPlus className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+                <h3 className="text-lg font-bold mb-2 text-white">保存你的星愿收藏</h3>
+                <p className="text-blue-200 text-sm mb-4">
+                  注册账户后，这个美好的星愿将永久保存在你的收藏中，你还可以查看更多收到的星愿！
+                </p>
+              </div>
+              
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation font-medium flex items-center justify-center space-x-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>注册保存星愿</span>
+              </button>
+            </div>
+          )}
+
+          {/* Action button */}
           <button
             onClick={onBack}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-4 sm:py-5 rounded-xl transition-all text-lg font-semibold touch-manipulation min-h-[56px]"
@@ -298,6 +431,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             {t('blindbox.doneButton')}
           </button>
         </div>
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          mode="signup"
+          onModeChange={() => {}}
+        />
       </div>
     );
   }
@@ -312,7 +453,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             ✨ {t('blindbox.title')} ✨
           </h1>
           <p className="text-gray-400 text-sm sm:text-base">
-            {t('blindbox.prepared')} {starChain.wishes.length} {t('blindbox.mysterousWishes')}
+            {t('blindbox.prepared')} {starChain.wishes?.length || 0} {t('blindbox.mysterousWishes')}
           </p>
         </div>
 
@@ -378,7 +519,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         {/* Open button */}
         <button
           onClick={openBlindBox}
-          className="group w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-8 sm:px-12 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 mx-auto relative overflow-hidden touch-manipulation min-h-[64px]"
+          disabled={!starChain.wishes || starChain.wishes.length === 0}
+          className="group w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 sm:px-12 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 mx-auto relative overflow-hidden touch-manipulation min-h-[64px]"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 animate-shimmer"></div>
           <Star className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-spin relative z-10" fill="currentColor" />
