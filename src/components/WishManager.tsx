@@ -368,10 +368,10 @@ const WishManager: React.FC<WishManagerProps> = ({
         </div>
 
         {/* Action button */}
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end mb-8">
           <button
             onClick={() => onNavigate('create')}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-3 sm:px-4 py-2 rounded-xl flex items-center space-x-1 sm:space-x-2 transition-all text-sm sm:text-base touch-manipulation"
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 sm:px-6 py-3 rounded-xl flex items-center space-x-2 transition-all text-sm sm:text-base touch-manipulation"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">{t('manager.newWish')}</span>
@@ -381,7 +381,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
         {/* Error message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
+          <div className="mb-8 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
             <p className="text-red-400 text-sm">{error}</p>
             <button 
               onClick={() => setError(null)}
@@ -392,54 +392,56 @@ const WishManager: React.FC<WishManagerProps> = ({
           </div>
         )}
 
-        {/* Selection controls */}
-        <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center justify-between">
+        {/* Selection controls - 重新设计间距 */}
+        <div className="mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+          <div className="flex items-center justify-between">
+            {/* 左侧：全选按钮 */}
+            <div className="flex items-center space-x-3">
               <button
                 onClick={selectAllWishes}
-                className="flex items-center space-x-2 px-3 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors touch-manipulation"
+                className="flex items-center space-x-3 px-4 py-3 text-sm bg-white/10 hover:bg-white/20 rounded-xl transition-colors touch-manipulation"
               >
-                <div className={`w-4 h-4 rounded border-2 border-white/40 flex items-center justify-center ${
+                <div className={`w-5 h-5 rounded border-2 border-white/40 flex items-center justify-center ${
                   selectedWishes.length === wishes.length ? 'bg-purple-500 border-purple-500' : ''
                 }`}>
                   {selectedWishes.length === wishes.length && (
                     <Check className="w-3 h-3 text-white" />
                   )}
                 </div>
-                <span>{t('manager.selectAll')}</span>
+                <span className="font-medium">{t('manager.selectAll')}</span>
                 {selectedWishes.length > 0 && (
-                  <span className="text-purple-300 font-medium">
-                    ({selectedWishes.length})
+                  <span className="text-purple-300 font-semibold bg-purple-500/20 px-2 py-1 rounded-full text-xs">
+                    {selectedWishes.length}
                   </span>
                 )}
               </button>
-              
-              {selectedWishes.length === 0 && (
-                <p className="text-sm text-gray-400">
+            </div>
+            
+            {/* 右侧：操作按钮或提示文字 */}
+            <div className="flex items-center space-x-3">
+              {selectedWishes.length > 0 ? (
+                <>
+                  <button
+                    onClick={() => setSelectedWishes([])}
+                    className="px-4 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors touch-manipulation"
+                  >
+                    {t('manager.cancel')}
+                  </button>
+                  <button
+                    onClick={generateShareLink}
+                    disabled={isGeneratingLink || !user}
+                    className="px-6 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>{t('manager.weaveChain')}</span>
+                  </button>
+                </>
+              ) : (
+                <p className="text-sm text-gray-400 italic">
                   💫 {t('manager.hint')}
                 </p>
               )}
             </div>
-            
-            {selectedWishes.length > 0 && (
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setSelectedWishes([])}
-                  className="px-3 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors touch-manipulation"
-                >
-                  {t('manager.cancel')}
-                </button>
-                <button
-                  onClick={generateShareLink}
-                  disabled={isGeneratingLink || !user}
-                  className="px-4 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all flex items-center space-x-1 shadow-lg touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>{t('manager.weaveChain')}</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -458,7 +460,7 @@ const WishManager: React.FC<WishManagerProps> = ({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {wishes.map((wish) => {
               const isSelected = selectedWishes.includes(wish.id);
               const priorityInfo = priorityConfig[wish.priority];
@@ -487,42 +489,41 @@ const WishManager: React.FC<WishManagerProps> = ({
                     )}
                   </div>
 
-                  <div className="relative z-10 p-5 sm:p-6">
-                    {/* Header with priority badge in top left */}
-                    <div className="flex items-start justify-between mb-4">
-                      {/* Priority badge - moved to top left */}
-                      <div className={`px-3 py-1 rounded-full ${priorityInfo.color} ${priorityInfo.glow} shadow-lg flex items-center space-x-1`}>
+                  <div className="relative z-10 p-6">
+                    {/* Priority badge in top left */}
+                    <div className="mb-6">
+                      <div className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-full ${priorityInfo.color} ${priorityInfo.glow} shadow-lg`}>
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                         <span className="text-white text-xs font-medium">{priorityInfo.label}</span>
                       </div>
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-bold text-lg mb-2 text-white leading-tight pr-8 line-clamp-2">
+                    <h3 className="font-bold text-xl mb-4 text-white leading-tight line-clamp-2">
                       {wish.title}
                     </h3>
                     
                     {/* Description */}
                     {wish.description && (
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-3 leading-relaxed">
+                      <p className="text-gray-300 text-sm mb-6 line-clamp-3 leading-relaxed">
                         {wish.description}
                       </p>
                     )}
 
                     {/* Tags */}
                     {wish.tags && wish.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-4">
+                      <div className="flex flex-wrap gap-2 mb-6">
                         {wish.tags.slice(0, 3).map((tag, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2 py-1 bg-white/10 rounded-full text-xs text-gray-300"
+                            className="inline-flex items-center px-3 py-1 bg-white/10 rounded-full text-xs text-gray-300"
                           >
                             <Tag className="w-3 h-3 mr-1" />
                             {tag}
                           </span>
                         ))}
                         {wish.tags.length > 3 && (
-                          <span className="px-2 py-1 bg-white/10 rounded-full text-xs text-gray-400">
+                          <span className="px-3 py-1 bg-white/10 rounded-full text-xs text-gray-400">
                             +{wish.tags.length - 3}
                           </span>
                         )}
@@ -531,15 +532,15 @@ const WishManager: React.FC<WishManagerProps> = ({
 
                     {/* Price */}
                     {wish.estimated_price && (
-                      <div className="flex items-center space-x-1 mb-4">
+                      <div className="flex items-center space-x-2 mb-6">
                         <span className="text-yellow-400 text-sm">💰</span>
                         <span className="text-yellow-400 text-sm font-medium">{wish.estimated_price}</span>
                       </div>
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-1 text-xs text-gray-400">
+                    <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                      <div className="flex items-center space-x-2 text-xs text-gray-400">
                         <Calendar className="w-3 h-3" />
                         <span>{new Date(wish.created_at).toLocaleDateString()}</span>
                       </div>
