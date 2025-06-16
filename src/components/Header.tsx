@@ -8,16 +8,12 @@ import LanguageSwitcher from './LanguageSwitcher';
 interface HeaderProps {
   showBackButton?: boolean;
   onBack?: () => void;
-  title?: string;
-  subtitle?: string;
   onAuthRequired?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   showBackButton, 
   onBack, 
-  title, 
-  subtitle, 
   onAuthRequired 
 }) => {
   const { user, loading } = useAuth();
@@ -56,15 +52,8 @@ const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Center - Title and subtitle */}
-        {title && (
-          <div className="flex-1 text-center mx-4">
-            <h1 className="text-xl sm:text-2xl font-bold">{title}</h1>
-            {subtitle && (
-              <p className="text-gray-300 text-sm sm:text-base">{subtitle}</p>
-            )}
-          </div>
-        )}
+        {/* Center - Empty space for better balance */}
+        <div className="flex-1"></div>
 
         {/* Right side - Language switcher and Auth components */}
         <div className="flex items-center space-x-3">

@@ -159,29 +159,24 @@ const AppContent: React.FC = () => {
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
-          title: t('create.title'),
           onAuthRequired: handleAuthRequired,
         };
       case 'manage':
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
-          title: t('manager.title'),
-          subtitle: `${wishes.length} ${t('manager.subtitle')}`,
           onAuthRequired: handleAuthRequired,
         };
       case 'shareHistory':
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
-          title: t('shareHistory.title'),
           onAuthRequired: handleAuthRequired,
         };
       case 'receivedWishes':
         return {
           showBackButton: true,
           onBack: () => setCurrentPage('landing'),
-          title: t('receivedWishes.title'),
           onAuthRequired: handleAuthRequired,
         };
       case 'blindbox':
