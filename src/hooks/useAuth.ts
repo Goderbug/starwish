@@ -20,6 +20,15 @@ export const useAuth = () => {
         if (mounted) {
           if (error) {
             console.error('❌ 获取会话失败:', error);
+            
+            // Check if the error is related to invalid refresh token
+            if (error.message?.includes('refresh_token_not_found') || 
+                error.message?.includes('Invalid Refresh Token')) {
+              console.log('🧹 检测到无效刷新令牌，清除本地会话...');
+              // Clear the invalid session
+              await supabase.auth.signOut();
+            }
+            
             setUser(null);
           } else if (session?.user) {
             console.log('✅ 发现现有会话:', session.user.email);
@@ -31,9 +40,22 @@ export const useAuth = () => {
           setLoading(false);
           setInitialized(true);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ 获取会话异常:', error);
+        
         if (mounted) {
+          // Check if the error is related to invalid refresh token
+          if (error.message?.includes('refresh_token_not_found') || 
+              error.message?.includes('Invalid Refresh Token')) {
+            console.log('🧹 检测到无效刷新令牌异常，清除本地会话...');
+            // Clear the invalid session
+            try {
+              await supabase.auth.signOut();
+            } catch (signOutError) {
+              console.error('❌ 登出时发生错误:', signOutError);
+            }
+          }
+          
           setUser(null);
           setLoading(false);
           setInitialized(true);
