@@ -395,7 +395,7 @@ const WishManager: React.FC<WishManagerProps> = ({
         {/* Selection controls */}
         <div className="mb-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center justify-between">
               <button
                 onClick={selectAllWishes}
                 className="flex items-center space-x-2 px-3 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors touch-manipulation"
@@ -414,6 +414,12 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </span>
                 )}
               </button>
+              
+              {selectedWishes.length === 0 && (
+                <p className="text-sm text-gray-400">
+                  💫 {t('manager.hint')}
+                </p>
+              )}
             </div>
             
             {selectedWishes.length > 0 && (
@@ -435,13 +441,6 @@ const WishManager: React.FC<WishManagerProps> = ({
               </div>
             )}
           </div>
-
-          {/* Selection hint */}
-          {selectedWishes.length === 0 && (
-            <p className="text-sm text-gray-400 text-center mt-2">
-              💫 {t('manager.hint')}
-            </p>
-          )}
         </div>
 
         {/* Wishes grid */}
