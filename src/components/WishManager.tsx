@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Trash2, Share2, Copy, Gift, Heart, Clock, Plus, Check, List, Sparkles, Calendar, Tag } from 'lucide-react';
+import { Star, Trash2, Share2, Copy, Plus, Check, List, Sparkles, Calendar, Tag } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateShareCode, Wish } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -32,12 +32,6 @@ const WishManager: React.FC<WishManagerProps> = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [wishToDelete, setWishToDelete] = useState<Wish | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const categoryIcons = {
-    gift: Sparkles,
-    experience: Heart,
-    moment: Calendar,
-  };
 
   const categoryColors = {
     gift: 'from-pink-400 to-rose-400',
@@ -414,13 +408,12 @@ const WishManager: React.FC<WishManagerProps> = ({
                   )}
                 </div>
                 <span>{t('manager.selectAll')}</span>
+                {selectedWishes.length > 0 && (
+                  <span className="text-purple-300 font-medium">
+                    ({selectedWishes.length})
+                  </span>
+                )}
               </button>
-              
-              {selectedWishes.length > 0 && (
-                <span className="text-sm font-medium text-purple-300">
-                  {t('manager.selected')} {selectedWishes.length}
-                </span>
-              )}
             </div>
             
             {selectedWishes.length > 0 && (
@@ -468,7 +461,6 @@ const WishManager: React.FC<WishManagerProps> = ({
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {wishes.map((wish) => {
-              const Icon = categoryIcons[wish.category];
               const isSelected = selectedWishes.includes(wish.id);
               const priorityInfo = priorityConfig[wish.priority];
               
@@ -497,13 +489,9 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </div>
 
                   <div className="relative z-10 p-5 sm:p-6">
-                    {/* Header with icon and priority */}
+                    {/* Header with priority badge in top left */}
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${categoryColors[wish.category]} flex items-center justify-center shadow-lg`}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      
-                      {/* Priority badge - 重新设计位置 */}
+                      {/* Priority badge - moved to top left */}
                       <div className={`px-3 py-1 rounded-full ${priorityInfo.color} ${priorityInfo.glow} shadow-lg flex items-center space-x-1`}>
                         <div className="w-2 h-2 bg-white rounded-full"></div>
                         <span className="text-white text-xs font-medium">{priorityInfo.label}</span>
@@ -511,7 +499,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                     </div>
 
                     {/* Title */}
-                    <h3 className="font-bold text-lg mb-3 text-white leading-tight pr-8 line-clamp-2">
+                    <h3 className="font-bold text-lg mb-2 text-white leading-tight pr-8 line-clamp-2">
                       {wish.title}
                     </h3>
                     
@@ -551,7 +539,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1 text-xs text-gray-400">
                         <Calendar className="w-3 h-3" />
                         <span>{new Date(wish.created_at).toLocaleDateString()}</span>
@@ -614,7 +602,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                 <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
                   <div className="flex items-center space-x-3 mb-2">
                     <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${categoryColors[wishToDelete.category]} flex items-center justify-center`}>
-                      {React.createElement(categoryIcons[wishToDelete.category], { className: "w-4 h-4 text-white" })}
+                      <Star className="w-4 h-4 text-white" fill="currentColor" />
                     </div>
                     <h4 className="font-semibold text-white">{wishToDelete.title}</h4>
                   </div>
