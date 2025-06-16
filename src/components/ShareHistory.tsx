@@ -132,37 +132,36 @@ const ShareHistory: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Chain stats */}
+                {/* Chain stats - 重新设计布局 */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                  <div className="bg-white/5 rounded-xl p-3 text-center">
-                    <Users className="w-5 h-5 text-purple-400 mx-auto mb-1" />
-                    <div className="text-lg font-semibold">{chain.total_opens}</div>
+                  {/* 打开次数 */}
+                  <div className="bg-white/5 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-white mb-1">{chain.total_opens}</div>
                     <div className="text-xs text-gray-400">{t('shareHistory.opens')}</div>
                   </div>
                   
-                  <div className="bg-white/5 rounded-xl p-3 text-center">
-                    <Eye className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-                    <div className="text-lg font-semibold">{chain.wishes?.length || 0}</div>
+                  {/* 心愿数 */}
+                  <div className="bg-white/5 rounded-xl p-4 text-center">
+                    <div className="text-2xl font-bold text-white mb-1">{chain.wishes?.length || 0}</div>
                     <div className="text-xs text-gray-400">{t('shareHistory.wishes')}</div>
                   </div>
                   
-                  <div className="bg-white/5 rounded-xl p-3 text-center">
-                    <Calendar className="w-5 h-5 text-green-400 mx-auto mb-1" />
-                    <div className="text-xs font-medium">{formatDate(chain.created_at)}</div>
+                  {/* 创建时间 */}
+                  <div className="bg-white/5 rounded-xl p-4 text-center">
+                    <div className="text-xs font-semibold text-white mb-1">{formatDate(chain.created_at)}</div>
                     <div className="text-xs text-gray-400">{t('shareHistory.created')}</div>
                   </div>
                   
-                  <div className="bg-white/5 rounded-xl p-3 text-center">
+                  {/* 过期时间 */}
+                  <div className="bg-white/5 rounded-xl p-4 text-center">
                     {chain.expires_at ? (
                       <>
-                        <Calendar className="w-5 h-5 text-orange-400 mx-auto mb-1" />
-                        <div className="text-xs font-medium">{formatDate(chain.expires_at)}</div>
+                        <div className="text-xs font-semibold text-white mb-1">{formatDate(chain.expires_at)}</div>
                         <div className="text-xs text-gray-400">{t('shareHistory.expires')}</div>
                       </>
                     ) : (
                       <>
-                        <div className="w-5 h-5 mx-auto mb-1">∞</div>
-                        <div className="text-xs font-medium">{t('shareHistory.permanent')}</div>
+                        <div className="text-xl font-bold text-white mb-1">∞</div>
                         <div className="text-xs text-gray-400">{t('shareHistory.noExpiry')}</div>
                       </>
                     )}
