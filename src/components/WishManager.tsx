@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Trash2, Share2, Copy, Gift, Heart, Clock, Plus, Check, List } from 'lucide-react';
+import { Star, Trash2, Share2, Copy, Gift, Heart, Clock, Plus, Check, List, Sparkles, Calendar, Tag } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateShareCode, Wish } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -34,9 +34,9 @@ const WishManager: React.FC<WishManagerProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const categoryIcons = {
-    gift: Gift,
+    gift: Sparkles,
     experience: Heart,
-    moment: Clock,
+    moment: Calendar,
   };
 
   const categoryColors = {
@@ -45,10 +45,22 @@ const WishManager: React.FC<WishManagerProps> = ({
     moment: 'from-blue-400 to-cyan-400',
   };
 
-  const priorityColors = {
-    low: 'bg-gray-500',
-    medium: 'bg-yellow-500',
-    high: 'bg-red-500',
+  const priorityConfig = {
+    low: { 
+      color: 'bg-emerald-500', 
+      label: t('priority.low'),
+      glow: 'shadow-emerald-500/30'
+    },
+    medium: { 
+      color: 'bg-amber-500', 
+      label: t('priority.medium'),
+      glow: 'shadow-amber-500/30'
+    },
+    high: { 
+      color: 'bg-red-500', 
+      label: t('priority.high'),
+      glow: 'shadow-red-500/30'
+    },
   };
 
   const toggleWishSelection = (wishId: string) => {
@@ -458,19 +470,23 @@ const WishManager: React.FC<WishManagerProps> = ({
             {wishes.map((wish) => {
               const Icon = categoryIcons[wish.category];
               const isSelected = selectedWishes.includes(wish.id);
+              const priorityInfo = priorityConfig[wish.priority];
               
               return (
                 <div
                   key={wish.id}
-                  className={`relative p-5 sm:p-6 bg-white/5 backdrop-blur-sm rounded-2xl border-2 transition-all cursor-pointer active:scale-95 touch-manipulation ${
+                  className={`group relative bg-white/5 backdrop-blur-sm rounded-2xl border-2 transition-all duration-300 cursor-pointer active:scale-95 touch-manipulation overflow-hidden ${
                     isSelected 
-                      ? 'border-purple-400 bg-purple-400/10 shadow-lg shadow-purple-400/20' 
+                      ? 'border-purple-400 bg-purple-400/10 shadow-lg shadow-purple-400/20 scale-105' 
                       : 'border-white/10 hover:border-white/20 hover:bg-white/10'
                   }`}
                   onClick={() => toggleWishSelection(wish.id)}
                 >
+                  {/* Background gradient overlay */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${categoryColors[wish.category]} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
+                  
                   {/* Selection indicator */}
-                  <div className={`absolute top-3 right-3 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                  <div className={`absolute top-4 right-4 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all z-10 ${
                     isSelected 
                       ? 'bg-purple-500 border-purple-500 scale-110' 
                       : 'border-white/30 hover:border-white/50'
@@ -480,59 +496,75 @@ const WishManager: React.FC<WishManagerProps> = ({
                     )}
                   </div>
 
-                  {/* Category icon and priority */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${categoryColors[wish.category]} flex items-center justify-center`}>
-                      <Icon className="w-5 h-5 text-white" />
+                  <div className="relative z-10 p-5 sm:p-6">
+                    {/* Header with icon and priority */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${categoryColors[wish.category]} flex items-center justify-center shadow-lg`}>
+                        <Icon className="w-6 h-6 text-white" />
+                      </div>
+                      
+                      {/* Priority badge - 重新设计位置 */}
+                      <div className={`px-3 py-1 rounded-full ${priorityInfo.color} ${priorityInfo.glow} shadow-lg flex items-center space-x-1`}>
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <span className="text-white text-xs font-medium">{priorityInfo.label}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${priorityColors[wish.priority]}`}></div>
-                      <span className="text-xs text-gray-400">{t(`priority.${wish.priority}`)}</span>
+
+                    {/* Title */}
+                    <h3 className="font-bold text-lg mb-3 text-white leading-tight pr-8 line-clamp-2">
+                      {wish.title}
+                    </h3>
+                    
+                    {/* Description */}
+                    {wish.description && (
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-3 leading-relaxed">
+                        {wish.description}
+                      </p>
+                    )}
+
+                    {/* Tags */}
+                    {wish.tags && wish.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {wish.tags.slice(0, 3).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="inline-flex items-center px-2 py-1 bg-white/10 rounded-full text-xs text-gray-300"
+                          >
+                            <Tag className="w-3 h-3 mr-1" />
+                            {tag}
+                          </span>
+                        ))}
+                        {wish.tags.length > 3 && (
+                          <span className="px-2 py-1 bg-white/10 rounded-full text-xs text-gray-400">
+                            +{wish.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Price */}
+                    {wish.estimated_price && (
+                      <div className="flex items-center space-x-1 mb-4">
+                        <span className="text-yellow-400 text-sm">💰</span>
+                        <span className="text-yellow-400 text-sm font-medium">{wish.estimated_price}</span>
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                      <div className="flex items-center space-x-1 text-xs text-gray-400">
+                        <Calendar className="w-3 h-3" />
+                        <span>{new Date(wish.created_at).toLocaleDateString()}</span>
+                      </div>
+                      
+                      <button
+                        onClick={(e) => handleDeleteClick(e, wish)}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors touch-manipulation opacity-0 group-hover:opacity-100"
+                        title="删除星愿"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
-                  </div>
-
-                  {/* Title and description */}
-                  <h3 className="font-semibold text-base sm:text-lg mb-2 text-white pr-8">{wish.title}</h3>
-                  {wish.description && (
-                    <p className="text-gray-300 text-sm mb-4 line-clamp-3">{wish.description}</p>
-                  )}
-
-                  {/* Tags */}
-                  {wish.tags && wish.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {wish.tags.slice(0, 3).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-white/10 rounded-full text-xs text-gray-300"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {wish.tags.length > 3 && (
-                        <span className="px-2 py-1 bg-white/10 rounded-full text-xs text-gray-400">
-                          +{wish.tags.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Price */}
-                  {wish.estimated_price && (
-                    <p className="text-sm text-yellow-400 mb-4">💰 {wish.estimated_price}</p>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-400">
-                      {new Date(wish.created_at).toLocaleDateString()}
-                    </span>
-                    <button
-                      onClick={(e) => handleDeleteClick(e, wish)}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors touch-manipulation"
-                      title="删除星愿"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
 
                   {/* Selection glow effect */}
