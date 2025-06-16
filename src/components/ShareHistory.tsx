@@ -58,6 +58,28 @@ const ShareHistory: React.FC = () => {
     }
   };
 
+  // 简化的日期格式函数
+  const formatShortDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) {
+      return '今天';
+    } else if (diffDays <= 7) {
+      return `${diffDays}天前`;
+    } else if (diffDays <= 30) {
+      const weeks = Math.floor(diffDays / 7);
+      return `${weeks}周前`;
+    } else {
+      return date.toLocaleDateString('zh-CN', {
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric',
@@ -132,7 +154,7 @@ const ShareHistory: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Chain stats - 重新设计布局 */}
+                {/* Chain stats - 统一布局设计 */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                   {/* 打开次数 */}
                   <div className="bg-white/5 rounded-xl p-4 text-center">
@@ -146,9 +168,9 @@ const ShareHistory: React.FC = () => {
                     <div className="text-xs text-gray-400">{t('shareHistory.wishes')}</div>
                   </div>
                   
-                  {/* 创建时间 */}
+                  {/* 创建时间 - 使用简化格式 */}
                   <div className="bg-white/5 rounded-xl p-4 text-center">
-                    <div className="text-xs font-semibold text-white mb-1">{formatDate(chain.created_at)}</div>
+                    <div className="text-2xl font-bold text-white mb-1">{formatShortDate(chain.created_at)}</div>
                     <div className="text-xs text-gray-400">{t('shareHistory.created')}</div>
                   </div>
                   
@@ -156,12 +178,12 @@ const ShareHistory: React.FC = () => {
                   <div className="bg-white/5 rounded-xl p-4 text-center">
                     {chain.expires_at ? (
                       <>
-                        <div className="text-xs font-semibold text-white mb-1">{formatDate(chain.expires_at)}</div>
+                        <div className="text-2xl font-bold text-white mb-1">{formatShortDate(chain.expires_at)}</div>
                         <div className="text-xs text-gray-400">{t('shareHistory.expires')}</div>
                       </>
                     ) : (
                       <>
-                        <div className="text-xl font-bold text-white mb-1">∞</div>
+                        <div className="text-2xl font-bold text-white mb-1">∞</div>
                         <div className="text-xs text-gray-400">{t('shareHistory.noExpiry')}</div>
                       </>
                     )}
