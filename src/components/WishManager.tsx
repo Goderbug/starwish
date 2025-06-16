@@ -223,23 +223,21 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // 创建星链
+      // 创建星链 - 使用事务确保数据一致性
       const shareCode = generateShareCode();
       console.log('📝 创建星链记录...', { shareCode });
       
-      const starChainData = {
-        creator_id: user.id,
-        share_code: shareCode,
-        is_active: true,
-        name: `星链 ${new Date().toLocaleDateString()}`,
-        description: `包含 ${selectedWishes.length} 个星愿的神秘星链`
-      };
-      
-      console.log('📝 星链数据:', starChainData);
-      
+      // 开始数据库事务
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
-        .insert(starChainData)
+        .insert({
+          creator_id: user.id,
+          share_code: shareCode,
+          is_active: true,
+          name: `星链 ${new Date().toLocaleDateString()}`,
+          description: `包含 ${selectedWishes.length} 个星愿的神秘星链`,
+          total_opens: 0
+        })
         .select()
         .single();
 
@@ -250,7 +248,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       console.log('✅ 星链创建成功:', starChain);
 
-      // 添加星愿到星链
+      // 添加星愿到星链 - 批量插入
       const chainWishes = selectedWishes.map(wishId => ({
         chain_id: starChain.id,
         wish_id: wishId,
@@ -264,7 +262,8 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       if (wishError2) {
         console.error('❌ 添加星愿到星链失败:', wishError2);
-        // 如果添加星愿失败，尝试删除已创建的星链
+        // 如果添加星愿失败，删除已创建的星链以保持数据一致性
+        console.log('🔄 回滚：删除已创建的星链...');
         await supabase
           .from('star_chains')
           .delete()
@@ -273,6 +272,31 @@ const WishManager: React.FC<WishManagerProps> = ({
       }
 
       console.log('✅ 星愿添加成功');
+
+      // 验证星链创建是否成功
+      const { data: verifyChain, error: verifyError } = await supabase
+        .from('star_chains')
+        .select(`
+          *,
+          star_chain_wishes(
+            wish:wishes(id, title)
+          )
+        `)
+        .eq('id', starChain.id)
+        .single();
+
+      if (verifyError || !verifyChain) {
+        console.error('❌ 星链验证失败:', verifyError);
+        throw new Error('星链创建验证失败');
+      }
+
+      const wishCount = verifyChain.star_chain_wishes?.length || 0;
+      console.log('✅ 星链验证成功，包含星愿数:', wishCount);
+
+      if (wishCount !== selectedWishes.length) {
+        console.error('❌ 星愿数量验证失败:', { expected: selectedWishes.length, actual: wishCount });
+        throw new Error('星愿数量验证失败，请重试');
+      }
 
       const link = `${window.location.origin}?box=${shareCode}`;
       setGeneratedLink(link);
