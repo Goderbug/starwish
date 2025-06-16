@@ -20,7 +20,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading: authLoading, initialized } = useAuth();
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -107,11 +107,43 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
+  // 检查按钮是否应该被禁用
+  const isWeaveButtonDisabled = () => {
+    // 如果认证状态还未初始化，禁用按钮
+    if (!initialized) {
+      console.log('🔐 认证状态未初始化，禁用按钮');
+      return true;
+    }
+    
+    // 如果正在生成链接，禁用按钮
+    if (isGeneratingLink) {
+      console.log('🔄 正在生成链接，禁用按钮');
+      return true;
+    }
+    
+    // 如果用户未登录，禁用按钮
+    if (!user) {
+      console.log('❌ 用户未登录，禁用按钮');
+      return true;
+    }
+    
+    // 如果没有选中的星愿，禁用按钮
+    if (selectedWishes.length === 0) {
+      console.log('📝 未选中星愿，禁用按钮');
+      return true;
+    }
+    
+    console.log('✅ 按钮可用');
+    return false;
+  };
+
   const generateShareLink = async () => {
     console.log('🔄 开始编织星链检查...', { 
       selectedWishesCount: selectedWishes.length,
       user: user ? { id: user.id, email: user.email } : null,
-      userExists: !!user
+      userExists: !!user,
+      initialized,
+      authLoading
     });
 
     if (selectedWishes.length === 0) {
@@ -119,8 +151,8 @@ const WishManager: React.FC<WishManagerProps> = ({
       return;
     }
     
-    if (!user) {
-      console.error('❌ 用户未登录');
+    if (!user || !initialized) {
+      console.error('❌ 用户未登录或认证状态未初始化');
       setError('请先登录后再创建星链');
       return;
     }
@@ -429,11 +461,20 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </button>
                   <button
                     onClick={generateShareLink}
-                    disabled={isGeneratingLink || !user}
-                    className="px-6 py-2 text-sm bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isWeaveButtonDisabled()}
+                    className={`px-6 py-2 text-sm rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation ${
+                      isWeaveButtonDisabled()
+                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                    }`}
                   >
                     <Share2 className="w-4 h-4" />
-                    <span>{t('manager.weaveChain')}</span>
+                    <span>
+                      {!initialized ? '初始化中...' : 
+                       !user ? '请先登录' : 
+                       isGeneratingLink ? '编织中...' : 
+                       t('manager.weaveChain')}
+                    </span>
                   </button>
                 </>
               ) : (
