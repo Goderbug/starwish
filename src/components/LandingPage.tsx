@@ -1,17 +1,24 @@
 import React from 'react';
 import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../hooks/useAuth';
+import { User } from '@supabase/supabase-js';
 
 interface LandingPageProps {
   onNavigate: (page: 'create' | 'manage' | 'shareHistory' | 'receivedWishes') => void;
   wishCount: number;
   onAuthRequired: () => void;
+  user: User | null;
+  loading: boolean;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount, onAuthRequired }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ 
+  onNavigate, 
+  wishCount, 
+  onAuthRequired, 
+  user, 
+  loading 
+}) => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
 
   const handleNavigate = (page: 'create' | 'manage' | 'shareHistory' | 'receivedWishes') => {
     if (!user) {
@@ -23,6 +30,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount, onAuth
     onNavigate(page);
   };
 
+  // 如果还在加载中，显示加载状态
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -71,7 +79,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount, onAuth
           </p>
         </div>
 
-        {/* Stats */}
+        {/* Stats - 只有在用户登录且有星愿时显示 */}
         {user && wishCount > 0 && (
           <div className="mb-6 sm:mb-8 inline-flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 sm:px-6 py-2 sm:py-3">
             <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" fill="currentColor" />
@@ -81,7 +89,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount, onAuth
           </div>
         )}
 
-        {/* Auth required message for non-authenticated users */}
+        {/* Auth required message for non-authenticated users - 只有在确定未登录时显示 */}
         {!user && (
           <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
             <div className="mb-4">
@@ -103,7 +111,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, wishCount, onAuth
           </div>
         )}
 
-        {/* Action buttons - only show if authenticated */}
+        {/* Action buttons - 只有在用户登录时显示 */}
         {user && (
           <div className="flex flex-col gap-3 sm:gap-4 justify-center items-center mb-12 sm:mb-16 px-4">
             <button

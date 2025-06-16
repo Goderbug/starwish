@@ -15,7 +15,7 @@ import { useLanguage } from './contexts/LanguageContext';
 // Main App component wrapped with language context
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox' | 'shareHistory' | 'receivedWishes'>('landing');
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
@@ -36,19 +36,25 @@ const AppContent: React.FC = () => {
 
   // Load wishes from database when user is authenticated
   useEffect(() => {
+    // 只有在认证状态已初始化后才执行
+    if (!initialized) {
+      console.log('⏳ 认证状态未初始化，等待中...');
+      return;
+    }
+
     if (user) {
       console.log('✅ 用户已登录，加载星愿数据:', user.email);
       fetchWishes();
     } else {
       console.log('❌ 用户未登录，清空星愿数据');
       setWishes([]);
-      // 只有在非盲盒页面且不在加载状态时才跳转到首页
-      if (currentPage !== 'blindbox' && !loading) {
+      // 只有在非盲盒页面时才跳转到首页
+      if (currentPage !== 'blindbox') {
         console.log('🔄 跳转到首页');
         setCurrentPage('landing');
       }
     }
-  }, [user, loading, currentPage]);
+  }, [user, initialized, currentPage]);
 
   const fetchWishes = async () => {
     if (!user) return;
@@ -191,12 +197,13 @@ const AppContent: React.FC = () => {
     }
   };
 
-  if (loading) {
+  // 显示加载状态，直到认证状态初始化完成
+  if (!initialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-3 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-gray-300 text-sm">Loading...</p>
+          <p className="text-gray-300 text-sm">初始化中...</p>
         </div>
       </div>
     );
@@ -243,6 +250,9 @@ const AppContent: React.FC = () => {
             onNavigate={setCurrentPage}
             wishCount={wishes.length}
             onAuthRequired={handleAuthRequired}
+            // 传递认证状态，确保组件能正确判断
+            user={user}
+            loading={loading}
           />
         )}
 
