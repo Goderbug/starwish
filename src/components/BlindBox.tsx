@@ -58,6 +58,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       console.log('✅ 星链数据获取成功:', chainData);
 
+      // 检查是否已经被开启过
+      if (chainData.is_opened) {
+        console.error('❌ 星链已被开启');
+        setError('This star chain has already been opened');
+        return;
+      }
+
       // 检查是否过期
       if (chainData.expires_at && new Date(chainData.expires_at) < new Date()) {
         console.error('❌ 星链已过期');
@@ -128,10 +135,29 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       console.log('🎯 随机选中星愿:', chosen.title, '索引:', randomIndex);
       setSelectedWish(chosen);
 
-      // 记录开启行为
+      // 记录开启行为并标记星链为已开启
       try {
-        console.log('📝 记录盲盒开启...');
+        console.log('📝 记录盲盒开启并标记星链为已开启...');
         
+        // 使用事务来确保数据一致性
+        const { error: updateChainError } = await supabase
+          .from('star_chains')
+          .update({
+            is_opened: true,
+            opened_at: new Date().toISOString(),
+            opener_fingerprint: userFingerprint,
+            total_opens: starChain.total_opens + 1
+          })
+          .eq('id', starChain.id)
+          .eq('is_opened', false); // 确保只有未开启的才能被标记为已开启
+
+        if (updateChainError) {
+          console.error('❌ 更新星链状态失败:', updateChainError);
+          throw new Error('Failed to mark star chain as opened');
+        }
+
+        console.log('✅ 星链状态更新成功');
+
         // 记录到 blind_box_opens 表
         const { error: openError } = await supabase
           .from('blind_box_opens')
@@ -167,7 +193,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       } catch (recordError) {
         console.error('❌ 记录开启异常:', recordError);
-        // 不影响主流程，继续显示结果
+        // 如果记录失败，仍然显示结果，但可能需要提示用户
       }
 
       setHasOpened(true);
@@ -247,8 +273,15 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-r from-gray-400/20 to-gray-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold mb-2 text-gray-300">{t('blindbox.expired')}</h2>
-          <p className="text-gray-400 mb-6 text-sm sm:text-base">{error || t('blindbox.expiredDesc')}</p>
+          <h2 className="text-xl sm:text-2xl font-bold mb-2 text-gray-300">
+            {error?.includes('already been opened') ? '盲盒已开启' : t('blindbox.expired')}
+          </h2>
+          <p className="text-gray-400 mb-6 text-sm sm:text-base">
+            {error?.includes('already been opened') 
+              ? '这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！' 
+              : (error || t('blindbox.expiredDesc'))
+            }
+          </p>
           <button
             onClick={onBack}
             className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl transition-colors touch-manipulation"
@@ -512,6 +545,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
             <p className="text-sm text-yellow-400">
               ⭐ {t('blindbox.selectHint')}
+            </p>
+          </div>
+          
+          {/* One-time use warning */}
+          <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20">
+            <p className="text-sm text-red-300">
+              ⚠️ 每个星愿盲盒只能开启一次，开启后链接将失效
             </p>
           </div>
         </div>

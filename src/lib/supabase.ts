@@ -47,6 +47,9 @@ export interface StarChain {
   share_code: string;
   expires_at?: string;
   is_active: boolean;
+  is_opened: boolean;
+  opened_at?: string;
+  opener_fingerprint?: string;
   total_opens: number;
   created_at: string;
   updated_at: string;
