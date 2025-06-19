@@ -88,39 +88,73 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return colors[category]?.[priority] || '#fbbf24';
   };
 
-  // 生成围绕标题区域的星愿星星位置 - 限制在指定区域内
+  // 检查位置是否与 Logo 区域冲突
+  const isPositionConflictingWithLogo = (x: number, y: number) => {
+    const logoX = 50; // Logo 在页面中心
+    const logoY = 25; // Logo 的大概位置（相对于标题区域）
+    const logoRadius = 15; // Logo 的安全半径
+    
+    const distance = Math.sqrt(Math.pow(x - logoX, 2) + Math.pow(y - logoY, 2));
+    return distance < logoRadius;
+  };
+
+  // 生成围绕标题区域的星愿星星位置 - 避开 Logo 区域
   const generateStarPosition = (index: number, total: number) => {
-    // 定义星星分布的安全区域 - 围绕标题但不覆盖按钮区域
     const centerX = 50; // 页面中心X
-    const centerY = 35; // 标题区域中心Y，稍微偏上
+    const centerY = 40; // 标题区域中心Y，稍微下移避开 Logo
     
-    // 创建多个同心圆环，但限制在更小的区域内
-    const rings = Math.ceil(total / 6); // 每环最多6颗星，更紧凑
-    const currentRing = Math.floor(index / 6);
-    const positionInRing = index % 6;
+    // 创建多个同心圆环，但避开 Logo 区域
+    const rings = Math.ceil(total / 8); // 每环最多8颗星
+    const currentRing = Math.floor(index / 8);
+    const positionInRing = index % 8;
     
-    // 更小的基础半径，确保星星围绕在标题周围
-    const baseRadius = 12 + currentRing * 8; // 从12%开始，每环增加8%
-    const maxRadius = 25; // 最大半径限制，确保不超出指定区域
+    // 调整半径，从 Logo 外围开始
+    const baseRadius = 18 + currentRing * 10; // 从18%开始，确保不与 Logo 冲突
+    const maxRadius = 35; // 最大半径限制
     
-    const angleStep = (2 * Math.PI) / Math.min(6, total - currentRing * 6);
-    const angle = positionInRing * angleStep + (currentRing * Math.PI / 6); // 每环稍微旋转
+    const angleStep = (2 * Math.PI) / Math.min(8, total - currentRing * 8);
+    let angle = positionInRing * angleStep + (currentRing * Math.PI / 8);
     
-    // 添加一些随机偏移让分布更自然，但范围更小
-    const radiusOffset = (Math.random() - 0.5) * 4;
-    const angleOffset = (Math.random() - 0.5) * 0.2;
+    // 如果星星数量较少，优先分布在 Logo 的左右两侧
+    if (total <= 4) {
+      const preferredAngles = [
+        -Math.PI / 3,  // 右上
+        Math.PI / 3,   // 右下
+        -2 * Math.PI / 3, // 左上
+        2 * Math.PI / 3   // 左下
+      ];
+      if (index < preferredAngles.length) {
+        angle = preferredAngles[index];
+      }
+    }
     
-    const finalRadius = Math.min(maxRadius, baseRadius + radiusOffset);
+    // 添加一些随机偏移让分布更自然
+    const radiusOffset = (Math.random() - 0.5) * 6;
+    const angleOffset = (Math.random() - 0.5) * 0.3;
+    
+    const finalRadius = Math.min(maxRadius, Math.max(18, baseRadius + radiusOffset));
     const finalAngle = angle + angleOffset;
     
     // 计算相对于中心的位置
-    const x = centerX + Math.cos(finalAngle) * finalRadius;
-    const y = centerY + Math.sin(finalAngle) * finalRadius * 0.7; // 垂直方向压缩
+    let x = centerX + Math.cos(finalAngle) * finalRadius;
+    let y = centerY + Math.sin(finalAngle) * finalRadius * 0.6; // 垂直方向压缩
     
-    // 严格限制星星在安全区域内 - 对应图片中标记的区域
+    // 检查是否与 Logo 冲突，如果冲突则调整位置
+    let attempts = 0;
+    while (isPositionConflictingWithLogo(x, y) && attempts < 10) {
+      // 如果冲突，增加半径或调整角度
+      const newRadius = finalRadius + 5 + attempts * 3;
+      const newAngle = finalAngle + (attempts % 2 === 0 ? 0.5 : -0.5);
+      
+      x = centerX + Math.cos(newAngle) * newRadius;
+      y = centerY + Math.sin(newAngle) * newRadius * 0.6;
+      attempts++;
+    }
+    
+    // 严格限制星星在安全区域内
     return {
-      x: Math.max(15, Math.min(85, x)), // 左右边界更严格
-      y: Math.max(20, Math.min(50, y))  // 上下边界更严格，确保在标题区域
+      x: Math.max(15, Math.min(85, x)),
+      y: Math.max(15, Math.min(55, y))
     };
   };
 
@@ -180,7 +214,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
         {/* Logo and title area with wish stars */}
         <div className="mb-6 sm:mb-8 relative">
-          {/* 用户的星愿星星 - 现在相对于这个容器定位，会随内容滚动 */}
+          {/* 用户的星愿星星 - 现在相对于这个容器定位，会随内容滚动，并避开 Logo */}
           {wishStars.map((star) => (
             <div
               key={star.id}
@@ -240,7 +274,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           ))}
 
           {/* Logo */}
-          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
+          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden z-30">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
             <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white relative z-10" fill="currentColor" />
           </div>
