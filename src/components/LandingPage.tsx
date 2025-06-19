@@ -24,16 +24,6 @@ interface WishStar {
   wish: Wish;
 }
 
-interface ShootingStar {
-  id: string;
-  startX: number;
-  startY: number;
-  endX: number;
-  endY: number;
-  duration: number;
-  delay: number;
-}
-
 // 6-pointed star SVG component
 const SixPointedStar: React.FC<{ 
   size: number; 
@@ -65,59 +55,6 @@ const SixPointedStar: React.FC<{
   </svg>
 );
 
-// Halley's Comet component
-const HalleysComet: React.FC<{ 
-  startX: number; 
-  startY: number; 
-  endX: number; 
-  endY: number; 
-  duration: number; 
-  delay: number; 
-}> = ({ startX, startY, endX, endY, duration, delay }) => (
-  <div
-    className="absolute pointer-events-none"
-    style={{
-      left: `${startX}%`,
-      top: `${startY}%`,
-      animation: `halleysComet ${duration}s linear ${delay}s infinite`,
-      '--end-x': `${endX - startX}vw`,
-      '--end-y': `${endY - startY}vh`,
-    } as React.CSSProperties}
-  >
-    {/* Comet head */}
-    <div className="relative">
-      <div className="w-3 h-3 bg-gradient-to-r from-blue-200 via-white to-yellow-200 rounded-full relative z-10">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-yellow-300 rounded-full animate-pulse"></div>
-        <div className="absolute inset-0.5 bg-white rounded-full opacity-90"></div>
-      </div>
-      
-      {/* Comet tail - multiple layers for realistic effect */}
-      <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-full">
-        {/* Main tail */}
-        <div className="w-16 h-1 bg-gradient-to-r from-blue-300/80 via-cyan-200/60 to-transparent rounded-full"></div>
-        {/* Secondary tail */}
-        <div className="w-12 h-0.5 bg-gradient-to-r from-yellow-200/70 via-orange-200/50 to-transparent rounded-full mt-0.5"></div>
-        {/* Dust trail */}
-        <div className="w-20 h-2 bg-gradient-to-r from-blue-100/40 via-cyan-100/30 to-transparent rounded-full -mt-1 blur-sm"></div>
-      </div>
-      
-      {/* Sparkle effects around comet head */}
-      {[...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
-          style={{
-            left: `${Math.cos(i * 60 * Math.PI / 180) * 8}px`,
-            top: `${Math.sin(i * 60 * Math.PI / 180) * 8}px`,
-            animationDelay: `${i * 0.2}s`,
-            animationDuration: '1s',
-          }}
-        />
-      ))}
-    </div>
-  </div>
-);
-
 const LandingPage: React.FC<LandingPageProps> = ({ 
   onNavigate, 
   wishCount, 
@@ -128,8 +65,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const { t } = useLanguage();
   const [wishStars, setWishStars] = useState<WishStar[]>([]);
-  const [shootingStars, setShootingStars] = useState<ShootingStar[]>([]);
-  const [showShootingStarMessage, setShowShootingStarMessage] = useState(false);
 
   // 根据星愿类型获取颜色
   const getWishStarColor = (category: string, priority: string) => {
@@ -208,49 +143,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
     }
   }, [user, wishes]);
 
-  // 生成哈雷彗星效果（仅当用户登录但没有星愿时）
-  useEffect(() => {
-    if (user && wishes.length === 0) {
-      const generateComet = () => {
-        const comet: ShootingStar = {
-          id: Math.random().toString(36).substr(2, 9),
-          startX: Math.random() * 30, // 从左侧开始
-          startY: Math.random() * 40 + 10, // 上半部分
-          endX: Math.random() * 30 + 60, // 到右侧结束
-          endY: Math.random() * 40 + 40, // 下半部分
-          duration: 4 + Math.random() * 3, // 更慢的速度，更优雅
-          delay: Math.random() * 8
-        };
-        return comet;
-      };
-
-      // 创建初始彗星
-      const initialComets = Array.from({ length: 2 }, generateComet);
-      setShootingStars(initialComets);
-
-      // 显示引导消息
-      const messageTimer = setTimeout(() => {
-        setShowShootingStarMessage(true);
-      }, 3000);
-
-      // 定期生成新彗星
-      const interval = setInterval(() => {
-        setShootingStars(prev => {
-          const newComet = generateComet();
-          return [...prev.slice(-1), newComet]; // 保持最多2颗彗星
-        });
-      }, 6000);
-
-      return () => {
-        clearTimeout(messageTimer);
-        clearInterval(interval);
-      };
-    } else {
-      setShootingStars([]);
-      setShowShootingStarMessage(false);
-    }
-  }, [user, wishes.length]);
-
   // 如果还在加载中，显示加载状态
   if (loading) {
     return (
@@ -326,19 +218,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         ))}
 
-        {/* 哈雷彗星效果（仅当没有星愿时显示） */}
-        {shootingStars.map((comet) => (
-          <HalleysComet
-            key={comet.id}
-            startX={comet.startX}
-            startY={comet.startY}
-            endX={comet.endX}
-            endY={comet.endY}
-            duration={comet.duration}
-            delay={comet.delay}
-          />
-        ))}
-
         {/* 背景装饰星星（静态，更少更精致） */}
         {[...Array(15)].map((_, i) => (
           <div
@@ -353,31 +232,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
           />
         ))}
       </div>
-
-      {/* 彗星引导气泡 */}
-      {showShootingStarMessage && user && wishes.length === 0 && (
-        <div className="fixed top-1/3 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
-          <div className="bg-gradient-to-r from-blue-500/95 to-purple-500/95 backdrop-blur-sm text-white px-8 py-6 rounded-3xl border border-white/30 shadow-2xl max-w-sm text-center">
-            <div className="flex items-center justify-center space-x-2 mb-3">
-              <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
-              <span className="font-bold text-lg">哈雷彗星划过</span>
-              <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
-            </div>
-            <p className="text-sm text-blue-100 mb-4 leading-relaxed">
-              传说中，向划过的彗星许愿会实现哦！<br/>
-              快来播种你的第一颗星愿吧 ✨
-            </p>
-            <button
-              onClick={() => onNavigate('create')}
-              className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl text-sm font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-            >
-              🌟 播种星愿
-            </button>
-          </div>
-          {/* 气泡尾巴 */}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-12 border-transparent border-t-blue-500/95"></div>
-        </div>
-      )}
 
       {/* Main content with top padding to account for header */}
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
