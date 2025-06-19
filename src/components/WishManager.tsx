@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Star, Trash2, Share2, Copy, Plus, Check, List, Sparkles, Calendar, Tag } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Star, Trash2, Share2, Copy, Plus, Check, List, Sparkles, Calendar, Tag, Filter, X, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateShareCode, Wish } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -11,6 +11,10 @@ interface WishManagerProps {
   onBack: () => void;
   onNavigate: (page: 'create') => void;
 }
+
+type SortOption = 'newest' | 'oldest' | 'priority-high' | 'priority-low' | 'title-az' | 'title-za';
+type FilterCategory = 'all' | 'gift' | 'experience' | 'moment';
+type FilterPriority = 'all' | 'low' | 'medium' | 'high';
 
 const WishManager: React.FC<WishManagerProps> = ({ 
   wishes, 
@@ -27,6 +31,13 @@ const WishManager: React.FC<WishManagerProps> = ({
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // 筛选和排序状态
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
+  const [filterPriority, setFilterPriority] = useState<FilterPriority>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
+  const [searchQuery, setSearchQuery] = useState('');
   
   // 删除确认相关状态
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -57,6 +68,83 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
+  // 筛选和排序逻辑
+  const filteredAndSortedWishes = useMemo(() => {
+    let filtered = wishes;
+
+    // 按类型筛选
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(wish => wish.category === filterCategory);
+    }
+
+    // 按优先级筛选
+    if (filterPriority !== 'all') {
+      filtered = filtered.filter(wish => wish.priority === filterPriority);
+    }
+
+    // 按搜索关键词筛选
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(wish => 
+        wish.title.toLowerCase().includes(query) ||
+        wish.description.toLowerCase().includes(query) ||
+        wish.tags.some(tag => tag.toLowerCase().includes(query)) ||
+        wish.notes.toLowerCase().includes(query)
+      );
+    }
+
+    // 排序
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'oldest':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'priority-high':
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        case 'priority-low':
+          const priorityOrderLow = { high: 3, medium: 2, low: 1 };
+          return priorityOrderLow[a.priority] - priorityOrderLow[b.priority];
+        case 'title-az':
+          return a.title.localeCompare(b.title);
+        case 'title-za':
+          return b.title.localeCompare(a.title);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [wishes, filterCategory, filterPriority, sortBy, searchQuery]);
+
+  // 获取筛选统计
+  const getFilterStats = () => {
+    const stats = {
+      all: wishes.length,
+      gift: wishes.filter(w => w.category === 'gift').length,
+      experience: wishes.filter(w => w.category === 'experience').length,
+      moment: wishes.filter(w => w.category === 'moment').length,
+      low: wishes.filter(w => w.priority === 'low').length,
+      medium: wishes.filter(w => w.priority === 'medium').length,
+      high: wishes.filter(w => w.priority === 'high').length,
+    };
+    return stats;
+  };
+
+  const filterStats = getFilterStats();
+
+  // 清除所有筛选条件
+  const clearAllFilters = () => {
+    setFilterCategory('all');
+    setFilterPriority('all');
+    setSortBy('newest');
+    setSearchQuery('');
+  };
+
+  // 检查是否有活跃的筛选条件
+  const hasActiveFilters = filterCategory !== 'all' || filterPriority !== 'all' || searchQuery.trim() !== '' || sortBy !== 'newest';
+
   const toggleWishSelection = (wishId: string) => {
     setSelectedWishes(prev => 
       prev.includes(wishId) 
@@ -66,10 +154,10 @@ const WishManager: React.FC<WishManagerProps> = ({
   };
 
   const selectAllWishes = () => {
-    if (selectedWishes.length === wishes.length) {
+    if (selectedWishes.length === filteredAndSortedWishes.length) {
       setSelectedWishes([]);
     } else {
-      setSelectedWishes(wishes.map(w => w.id));
+      setSelectedWishes(filteredAndSortedWishes.map(w => w.id));
     }
   };
 
@@ -448,6 +536,165 @@ const WishManager: React.FC<WishManagerProps> = ({
           </div>
         )}
 
+        {/* 筛选和搜索区域 */}
+        <div className="mb-8 space-y-4">
+          {/* 搜索栏和筛选按钮 */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* 搜索框 */}
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                placeholder="搜索星愿标题、描述、标签..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-4 pr-10 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* 筛选按钮 */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all ${
+                showFilters || hasActiveFilters
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30'
+                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span>筛选</span>
+              {hasActiveFilters && (
+                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+              )}
+              <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+
+          {/* 筛选面板 */}
+          {showFilters && (
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* 星愿类型筛选 */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">星愿类型</h4>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'all', label: '全部', count: filterStats.all },
+                      { value: 'gift', label: t('category.gift'), count: filterStats.gift },
+                      { value: 'experience', label: t('category.experience'), count: filterStats.experience },
+                      { value: 'moment', label: t('category.moment'), count: filterStats.moment },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setFilterCategory(option.value as FilterCategory)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
+                          filterCategory === option.value
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                        <span className="text-xs opacity-60">{option.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 渴望程度筛选 */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">渴望程度</h4>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'all', label: '全部', count: filterStats.all },
+                      { value: 'high', label: t('priority.high'), count: filterStats.high },
+                      { value: 'medium', label: t('priority.medium'), count: filterStats.medium },
+                      { value: 'low', label: t('priority.low'), count: filterStats.low },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setFilterPriority(option.value as FilterPriority)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all ${
+                          filterPriority === option.value
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                        <span className="text-xs opacity-60">{option.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 排序选项 */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">排序方式</h4>
+                  <div className="space-y-2">
+                    {[
+                      { value: 'newest', label: '最新创建' },
+                      { value: 'oldest', label: '最早创建' },
+                      { value: 'priority-high', label: '渴望程度高→低' },
+                      { value: 'priority-low', label: '渴望程度低→高' },
+                      { value: 'title-az', label: '标题 A→Z' },
+                      { value: 'title-za', label: '标题 Z→A' },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setSortBy(option.value as SortOption)}
+                        className={`w-full flex items-center px-3 py-2 rounded-lg text-sm transition-all ${
+                          sortBy === option.value
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 清除筛选按钮 */}
+              {hasActiveFilters && (
+                <div className="mt-6 pt-4 border-t border-white/10">
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600/50 hover:bg-gray-600/70 text-gray-300 rounded-lg transition-all text-sm"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>清除所有筛选</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 筛选结果提示 */}
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between bg-blue-500/10 border border-blue-400/20 rounded-xl p-4">
+              <div className="flex items-center space-x-2 text-blue-300">
+                <Filter className="w-4 h-4" />
+                <span className="text-sm">
+                  显示 {filteredAndSortedWishes.length} / {wishes.length} 个星愿
+                </span>
+              </div>
+              <button
+                onClick={clearAllFilters}
+                className="text-blue-400 hover:text-blue-300 text-sm underline"
+              >
+                清除筛选
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Selection controls - 重新设计间距 */}
         <div className="mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
           <div className="flex items-center justify-between">
@@ -458,9 +705,9 @@ const WishManager: React.FC<WishManagerProps> = ({
                 className="flex items-center space-x-3 px-4 py-3 text-sm bg-white/10 hover:bg-white/20 rounded-xl transition-colors touch-manipulation"
               >
                 <div className={`w-5 h-5 rounded border-2 border-white/40 flex items-center justify-center ${
-                  selectedWishes.length === wishes.length ? 'bg-purple-500 border-purple-500' : ''
+                  selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0 ? 'bg-purple-500 border-purple-500' : ''
                 }`}>
-                  {selectedWishes.length === wishes.length && (
+                  {selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0 && (
                     <Check className="w-3 h-3 text-white" />
                   )}
                 </div>
@@ -511,22 +758,40 @@ const WishManager: React.FC<WishManagerProps> = ({
         </div>
 
         {/* Wishes grid */}
-        {wishes.length === 0 ? (
+        {filteredAndSortedWishes.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
+              {hasActiveFilters ? (
+                <Filter className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
+              ) : (
+                <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
+              )}
             </div>
-            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-300">{t('manager.noWishes')}</h3>
-            <button
-              onClick={() => onNavigate('create')}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
-            >
-              {t('manager.plantFirst')}
-            </button>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-300">
+              {hasActiveFilters ? '没有符合条件的星愿' : t('manager.noWishes')}
+            </h3>
+            <p className="text-gray-400 mb-6">
+              {hasActiveFilters ? '尝试调整筛选条件或清除筛选' : '开始播种你的第一颗星愿吧'}
+            </p>
+            {hasActiveFilters ? (
+              <button
+                onClick={clearAllFilters}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
+              >
+                清除筛选条件
+              </button>
+            ) : (
+              <button
+                onClick={() => onNavigate('create')}
+                className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
+              >
+                {t('manager.plantFirst')}
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {wishes.map((wish) => {
+            {filteredAndSortedWishes.map((wish) => {
               const isSelected = selectedWishes.includes(wish.id);
               const priorityInfo = priorityConfig[wish.priority];
               
