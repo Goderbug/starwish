@@ -536,66 +536,150 @@ const WishManager: React.FC<WishManagerProps> = ({
           </div>
         )}
 
-        {/* Selection controls - 重新设计间距 */}
+        {/* 筛选工具栏 */}
         <div className="mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-          <div className="flex items-center justify-between">
-            {/* 左侧：全选按钮 */}
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={selectAllWishes}
-                className="flex items-center space-x-3 px-4 py-3 text-sm bg-white/10 hover:bg-white/20 rounded-xl transition-colors touch-manipulation"
-              >
-                <div className={`w-5 h-5 rounded border-2 border-white/40 flex items-center justify-center ${
-                  selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0 ? 'bg-purple-500 border-purple-500' : ''
-                }`}>
-                  {selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0 && (
-                    <Check className="w-3 h-3 text-white" />
-                  )}
-                </div>
-                <span className="font-medium">{t('manager.selectAll')}</span>
-                {selectedWishes.length > 0 && (
-                  <span className="text-purple-300 font-semibold bg-purple-500/20 px-2 py-1 rounded-full text-xs">
-                    {selectedWishes.length}
-                  </span>
-                )}
-              </button>
-            </div>
-            
-            {/* 右侧：操作按钮或提示文字 */}
-            <div className="flex items-center space-x-3">
-              {selectedWishes.length > 0 ? (
-                <>
-                  <button
-                    onClick={() => setSelectedWishes([])}
-                    className="px-4 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors touch-manipulation"
-                  >
-                    {t('manager.cancel')}
-                  </button>
-                  <button
-                    onClick={generateShareLink}
-                    disabled={isWeaveButtonDisabled()}
-                    className={`px-6 py-2 text-sm rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation ${
-                      isWeaveButtonDisabled()
-                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                        : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
-                    }`}
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>
-                      {!initialized ? '初始化中...' : 
-                       !user ? '请先登录' : 
-                       isGeneratingLink ? '编织中...' : 
-                       t('manager.weaveChain')}
-                    </span>
-                  </button>
-                </>
-              ) : (
-                <p className="text-sm text-gray-400 italic">
-                  💫 {t('manager.hint')}
-                </p>
+          <div className="flex items-center space-x-3">
+            {/* 搜索框 */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="搜索星愿..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-10 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               )}
             </div>
+
+            {/* 筛选按钮 */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all relative ${
+                showFilters || hasActiveFilters
+                  ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30'
+                  : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span className="hidden sm:inline">筛选</span>
+              {hasActiveFilters && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full"></div>
+              )}
+              {showFilters ? (
+                <ChevronDown className="w-4 h-4" />
+              ) : (
+                <ChevronUp className="w-4 h-4" />
+              )}
+            </button>
           </div>
+
+          {/* 筛选面板 */}
+          {showFilters && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* 星愿类型筛选 */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-300 mb-2">星愿类型</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      { value: 'all', label: '全部', count: filterStats.all },
+                      { value: 'gift', label: t('category.gift'), count: filterStats.gift },
+                      { value: 'experience', label: t('category.experience'), count: filterStats.experience },
+                      { value: 'moment', label: t('category.moment'), count: filterStats.moment },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setFilterCategory(option.value as FilterCategory)}
+                        className={`px-2 py-1 rounded-lg text-xs transition-all ${
+                          filterCategory === option.value
+                            ? 'bg-purple-500/30 text-purple-300 border border-purple-400/50'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {option.label} ({option.count})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 渴望程度筛选 */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-300 mb-2">渴望程度</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      { value: 'all', label: '全部', count: filterStats.all },
+                      { value: 'high', label: t('priority.high'), count: filterStats.high },
+                      { value: 'medium', label: t('priority.medium'), count: filterStats.medium },
+                      { value: 'low', label: t('priority.low'), count: filterStats.low },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setFilterPriority(option.value as FilterPriority)}
+                        className={`px-2 py-1 rounded-lg text-xs transition-all ${
+                          filterPriority === option.value
+                            ? 'bg-purple-500/30 text-purple-300 border border-purple-400/50'
+                            : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                        }`}
+                      >
+                        {option.label} ({option.count})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 排序选项 */}
+                <div>
+                  <h4 className="text-xs font-medium text-gray-300 mb-2">排序方式</h4>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-400/20"
+                  >
+                    <option value="newest">最新创建</option>
+                    <option value="oldest">最早创建</option>
+                    <option value="priority-high">渴望程度高→低</option>
+                    <option value="priority-low">渴望程度低→高</option>
+                    <option value="title-az">标题 A→Z</option>
+                    <option value="title-za">标题 Z→A</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 清除筛选按钮 */}
+              {hasActiveFilters && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <button
+                    onClick={clearAllFilters}
+                    className="flex items-center space-x-1 px-3 py-1 bg-gray-600/50 hover:bg-gray-600/70 text-gray-300 rounded-lg transition-all text-xs"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>清除筛选</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 筛选结果提示 */}
+          {hasActiveFilters && (
+            <div className="mt-3 flex items-center justify-between text-xs text-blue-300">
+              <span>显示 {filteredAndSortedWishes.length} / {wishes.length} 个星愿</span>
+              <button
+                onClick={clearAllFilters}
+                className="text-blue-400 hover:text-blue-300 underline"
+              >
+                清除筛选
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Wishes grid */}
@@ -912,157 +996,70 @@ const WishManager: React.FC<WishManagerProps> = ({
         )}
       </div>
 
-      {/* 底部悬浮筛选组件 */}
+      {/* 底部悬浮的选择和创建星链组件 */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent backdrop-blur-sm">
-        {/* 筛选面板 */}
-        {showFilters && (
-          <div className="p-4 border-t border-white/10">
-            <div className="max-w-4xl mx-auto">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {/* 星愿类型筛选 */}
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-300 mb-2">星愿类型</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {[
-                        { value: 'all', label: '全部', count: filterStats.all },
-                        { value: 'gift', label: t('category.gift'), count: filterStats.gift },
-                        { value: 'experience', label: t('category.experience'), count: filterStats.experience },
-                        { value: 'moment', label: t('category.moment'), count: filterStats.moment },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setFilterCategory(option.value as FilterCategory)}
-                          className={`px-2 py-1 rounded-lg text-xs transition-all ${
-                            filterCategory === option.value
-                              ? 'bg-purple-500/30 text-purple-300 border border-purple-400/50'
-                              : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                          }`}
-                        >
-                          {option.label} ({option.count})
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 渴望程度筛选 */}
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-300 mb-2">渴望程度</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {[
-                        { value: 'all', label: '全部', count: filterStats.all },
-                        { value: 'high', label: t('priority.high'), count: filterStats.high },
-                        { value: 'medium', label: t('priority.medium'), count: filterStats.medium },
-                        { value: 'low', label: t('priority.low'), count: filterStats.low },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => setFilterPriority(option.value as FilterPriority)}
-                          className={`px-2 py-1 rounded-lg text-xs transition-all ${
-                            filterPriority === option.value
-                              ? 'bg-purple-500/30 text-purple-300 border border-purple-400/50'
-                              : 'bg-white/5 text-gray-300 hover:bg-white/10'
-                          }`}
-                        >
-                          {option.label} ({option.count})
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 排序选项 */}
-                  <div>
-                    <h4 className="text-xs font-medium text-gray-300 mb-2">排序方式</h4>
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-400/20"
-                    >
-                      <option value="newest">最新创建</option>
-                      <option value="oldest">最早创建</option>
-                      <option value="priority-high">渴望程度高→低</option>
-                      <option value="priority-low">渴望程度低→高</option>
-                      <option value="title-az">标题 A→Z</option>
-                      <option value="title-za">标题 Z→A</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 清除筛选按钮 */}
-                {hasActiveFilters && (
-                  <div className="mt-3 pt-3 border-t border-white/10">
-                    <button
-                      onClick={clearAllFilters}
-                      className="flex items-center space-x-1 px-3 py-1 bg-gray-600/50 hover:bg-gray-600/70 text-gray-300 rounded-lg transition-all text-xs"
-                    >
-                      <X className="w-3 h-3" />
-                      <span>清除筛选</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 底部工具栏 */}
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center space-x-3">
-              {/* 搜索框 */}
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="搜索星愿..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all text-sm"
-                />
-                {searchQuery && (
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+              <div className="flex items-center justify-between">
+                {/* 左侧：全选按钮 */}
+                <div className="flex items-center space-x-3">
                   <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    onClick={selectAllWishes}
+                    className="flex items-center space-x-3 px-4 py-3 text-sm bg-white/10 hover:bg-white/20 rounded-xl transition-colors touch-manipulation"
                   >
-                    <X className="w-4 h-4" />
+                    <div className={`w-5 h-5 rounded border-2 border-white/40 flex items-center justify-center ${
+                      selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0 ? 'bg-purple-500 border-purple-500' : ''
+                    }`}>
+                      {selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0 && (
+                        <Check className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <span className="font-medium">{t('manager.selectAll')}</span>
+                    {selectedWishes.length > 0 && (
+                      <span className="text-purple-300 font-semibold bg-purple-500/20 px-2 py-1 rounded-full text-xs">
+                        {selectedWishes.length}
+                      </span>
+                    )}
                   </button>
-                )}
+                </div>
+                
+                {/* 右侧：操作按钮或提示文字 */}
+                <div className="flex items-center space-x-3">
+                  {selectedWishes.length > 0 ? (
+                    <>
+                      <button
+                        onClick={() => setSelectedWishes([])}
+                        className="px-4 py-2 text-sm bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors touch-manipulation"
+                      >
+                        {t('manager.cancel')}
+                      </button>
+                      <button
+                        onClick={generateShareLink}
+                        disabled={isWeaveButtonDisabled()}
+                        className={`px-6 py-2 text-sm rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation ${
+                          isWeaveButtonDisabled()
+                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                        }`}
+                      >
+                        <Share2 className="w-4 h-4" />
+                        <span>
+                          {!initialized ? '初始化中...' : 
+                           !user ? '请先登录' : 
+                           isGeneratingLink ? '编织中...' : 
+                           t('manager.weaveChain')}
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">
+                      💫 {t('manager.hint')}
+                    </p>
+                  )}
+                </div>
               </div>
-
-              {/* 筛选按钮 */}
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all relative ${
-                  showFilters || hasActiveFilters
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-400/30'
-                    : 'bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20'
-                }`}
-              >
-                <Filter className="w-4 h-4" />
-                <span className="hidden sm:inline">筛选</span>
-                {hasActiveFilters && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full"></div>
-                )}
-                {showFilters ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronUp className="w-4 h-4" />
-                )}
-              </button>
             </div>
-
-            {/* 筛选结果提示 */}
-            {hasActiveFilters && (
-              <div className="mt-3 flex items-center justify-between text-xs text-blue-300">
-                <span>显示 {filteredAndSortedWishes.length} / {wishes.length} 个星愿</span>
-                <button
-                  onClick={clearAllFilters}
-                  className="text-blue-400 hover:text-blue-300 underline"
-                >
-                  清除筛选
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
