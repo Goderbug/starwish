@@ -511,18 +511,6 @@ const WishManager: React.FC<WishManagerProps> = ({
           </p>
         </div>
 
-        {/* Action button */}
-        <div className="flex justify-end mb-8">
-          <button
-            onClick={() => onNavigate('create')}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 sm:px-6 py-3 rounded-xl flex items-center space-x-2 transition-all text-sm sm:text-base touch-manipulation"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('manager.newWish')}</span>
-            <span className="sm:hidden">{t('common.new')}</span>
-          </button>
-        </div>
-
         {/* Error message */}
         {error && (
           <div className="mb-8 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
@@ -536,8 +524,8 @@ const WishManager: React.FC<WishManagerProps> = ({
           </div>
         )}
 
-        {/* 筛选工具栏 */}
-        <div className="mb-8 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+        {/* 搜索和筛选工具栏 - 去掉边框，合并新星愿按钮 */}
+        <div className="mb-8">
           <div className="flex items-center space-x-3">
             {/* 搜索框 */}
             <div className="flex-1 relative">
@@ -574,16 +562,26 @@ const WishManager: React.FC<WishManagerProps> = ({
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full"></div>
               )}
               {showFilters ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
                 <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
               )}
+            </button>
+
+            {/* 新星愿按钮 - 移到筛选右侧 */}
+            <button
+              onClick={() => onNavigate('create')}
+              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 sm:px-6 py-3 rounded-xl flex items-center space-x-2 transition-all text-sm sm:text-base touch-manipulation"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">{t('manager.newWish')}</span>
+              <span className="sm:hidden">{t('common.new')}</span>
             </button>
           </div>
 
           {/* 筛选面板 */}
           {showFilters && (
-            <div className="mt-4 pt-4 border-t border-white/10">
+            <div className="mt-4 p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* 星愿类型筛选 */}
                 <div>
