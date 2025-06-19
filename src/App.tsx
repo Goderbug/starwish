@@ -222,22 +222,6 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* Animated background stars */}
-      <div className="fixed inset-0 pointer-events-none">
-        {[...Array(50)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-60 animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
-
       {/* Main content with top padding to account for header */}
       <div className="pt-20 sm:pt-24">
         {currentPage === 'landing' && (
@@ -248,6 +232,8 @@ const AppContent: React.FC = () => {
             // 传递认证状态，确保组件能正确判断
             user={user}
             loading={loading}
+            // 传递星愿数据用于生成星空
+            wishes={wishes}
           />
         )}
 
