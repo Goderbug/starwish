@@ -195,61 +195,102 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // 修复后的按钮状态检查 - 更加严格和准确
+  // 🔧 完全重写的按钮状态检查逻辑 - 修复认证状态冲突
   const getWeaveButtonState = () => {
-    console.log('🔍 检查编织按钮状态:', {
-      initialized,
-      authLoading,
-      user: user ? { id: user.id, email: user.email } : null,
-      selectedWishesCount: selectedWishes.length,
-      isGeneratingLink
+    // 详细的状态日志，便于调试
+    console.log('🔍 [WishManager] 检查编织按钮状态:', {
+      timestamp: new Date().toISOString(),
+      authState: {
+        initialized,
+        authLoading,
+        hasUser: !!user,
+        userEmail: user?.email,
+        userId: user?.id
+      },
+      appState: {
+        selectedWishesCount: selectedWishes.length,
+        isGeneratingLink,
+        totalWishes: wishes.length
+      }
     });
 
-    // 如果正在生成链接，显示生成中状态
+    // 1. 正在生成链接时
     if (isGeneratingLink) {
+      console.log('✅ [WishManager] 状态: 正在生成链接');
       return {
         disabled: true,
         text: '编织中...',
-        reason: 'generating'
+        reason: 'generating',
+        debugInfo: 'Currently generating link'
       };
     }
 
-    // 如果认证状态还未初始化，显示初始化状态
+    // 2. 认证系统未初始化时（等待状态）
     if (!initialized) {
+      console.log('⏳ [WishManager] 状态: 认证系统未初始化');
       return {
         disabled: true,
         text: '初始化中...',
-        reason: 'initializing'
+        reason: 'initializing',
+        debugInfo: 'Auth system not initialized'
       };
     }
 
-    // 如果没有用户（已确认未登录），显示登录提示
-    if (!user) {
+    // 3. 认证系统已初始化，但用户为空（确认未登录）
+    if (initialized && !user) {
+      console.log('❌ [WishManager] 状态: 用户未登录');
       return {
         disabled: true,
         text: '请先登录',
-        reason: 'not_authenticated'
+        reason: 'not_authenticated',
+        debugInfo: 'User not authenticated'
       };
     }
 
-    // 如果没有选中星愿，显示选择提示
-    if (selectedWishes.length === 0) {
+    // 4. 用户已登录，但没有选择星愿
+    if (user && selectedWishes.length === 0) {
+      console.log('📝 [WishManager] 状态: 未选择星愿');
       return {
         disabled: true,
         text: '请选择星愿',
-        reason: 'no_selection'
+        reason: 'no_selection',
+        debugInfo: 'No wishes selected'
       };
     }
 
-    // 一切正常，可以编织
+    // 5. 一切正常，可以编织星链
+    if (user && selectedWishes.length > 0) {
+      console.log('✅ [WishManager] 状态: 可以编织星链');
+      return {
+        disabled: false,
+        text: t('manager.weaveChain'),
+        reason: 'ready',
+        debugInfo: `Ready to weave with ${selectedWishes.length} wishes`
+      };
+    }
+
+    // 6. 兜底情况（不应该到达这里）
+    console.warn('⚠️ [WishManager] 状态: 未知状态，默认禁用');
     return {
-      disabled: false,
-      text: t('manager.weaveChain'),
-      reason: 'ready'
+      disabled: true,
+      text: '状态异常',
+      reason: 'unknown',
+      debugInfo: 'Unknown state - fallback'
     };
   };
 
+  // 获取按钮状态
   const weaveButtonState = getWeaveButtonState();
+
+  // 🔧 添加实时状态监控（开发时使用）
+  React.useEffect(() => {
+    console.log('🔄 [WishManager] 认证状态变化:', {
+      initialized,
+      user: user ? { id: user.id, email: user.email } : null,
+      authLoading,
+      buttonState: weaveButtonState
+    });
+  }, [initialized, user, authLoading, selectedWishes.length, isGeneratingLink]);
 
   const generateShareLink = async () => {
     console.log('🔄 开始编织星链检查...', { 
@@ -547,6 +588,21 @@ const WishManager: React.FC<WishManagerProps> = ({
             >
               关闭
             </button>
+          </div>
+        )}
+
+        {/* 🔧 调试信息面板（开发时显示） */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-xs">
+            <details>
+              <summary className="text-blue-300 cursor-pointer">🔍 调试信息</summary>
+              <div className="mt-2 space-y-1 text-blue-200">
+                <div>认证状态: {initialized ? '已初始化' : '未初始化'} | 用户: {user ? user.email : '未登录'}</div>
+                <div>按钮状态: {weaveButtonState.text} ({weaveButtonState.reason})</div>
+                <div>选中星愿: {selectedWishes.length} 个</div>
+                <div>调试信息: {weaveButtonState.debugInfo}</div>
+              </div>
+            </details>
           </div>
         )}
 
@@ -1066,6 +1122,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                             ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                             : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
                         }`}
+                        title={weaveButtonState.debugInfo}
                       >
                         <Share2 className="w-4 h-4" />
                         <span>{weaveButtonState.text}</span>
