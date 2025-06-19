@@ -88,36 +88,39 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return colors[category]?.[priority] || '#fbbf24';
   };
 
-  // 生成围绕中心区域的星愿星星位置
+  // 生成围绕标题区域的星愿星星位置 - 限制在指定区域内
   const generateStarPosition = (index: number, total: number) => {
-    // 创建多个同心圆环，星星围绕中心分布
-    const rings = Math.ceil(total / 8); // 每环最多8颗星
-    const currentRing = Math.floor(index / 8);
-    const positionInRing = index % 8;
+    // 定义星星分布的安全区域 - 围绕标题但不覆盖按钮区域
+    const centerX = 50; // 页面中心X
+    const centerY = 35; // 标题区域中心Y，稍微偏上
     
-    // 基础半径和角度
-    const baseRadius = 25 + currentRing * 15; // 从25%开始，每环增加15%
-    const angleStep = (2 * Math.PI) / Math.min(8, total - currentRing * 8);
-    const angle = positionInRing * angleStep + (currentRing * Math.PI / 8); // 每环稍微旋转
+    // 创建多个同心圆环，但限制在更小的区域内
+    const rings = Math.ceil(total / 6); // 每环最多6颗星，更紧凑
+    const currentRing = Math.floor(index / 6);
+    const positionInRing = index % 6;
     
-    // 添加一些随机偏移让分布更自然
-    const radiusOffset = (Math.random() - 0.5) * 8;
-    const angleOffset = (Math.random() - 0.5) * 0.3;
+    // 更小的基础半径，确保星星围绕在标题周围
+    const baseRadius = 12 + currentRing * 8; // 从12%开始，每环增加8%
+    const maxRadius = 25; // 最大半径限制，确保不超出指定区域
     
-    const finalRadius = baseRadius + radiusOffset;
+    const angleStep = (2 * Math.PI) / Math.min(6, total - currentRing * 6);
+    const angle = positionInRing * angleStep + (currentRing * Math.PI / 6); // 每环稍微旋转
+    
+    // 添加一些随机偏移让分布更自然，但范围更小
+    const radiusOffset = (Math.random() - 0.5) * 4;
+    const angleOffset = (Math.random() - 0.5) * 0.2;
+    
+    const finalRadius = Math.min(maxRadius, baseRadius + radiusOffset);
     const finalAngle = angle + angleOffset;
     
     // 计算相对于中心的位置
-    const centerX = 50; // 页面中心
-    const centerY = 45; // 稍微偏上，避开内容区域
-    
     const x = centerX + Math.cos(finalAngle) * finalRadius;
-    const y = centerY + Math.sin(finalAngle) * finalRadius * 0.6; // 垂直方向压缩，更符合视觉效果
+    const y = centerY + Math.sin(finalAngle) * finalRadius * 0.7; // 垂直方向压缩
     
-    // 确保星星在可见区域内
+    // 严格限制星星在安全区域内 - 对应图片中标记的区域
     return {
-      x: Math.max(5, Math.min(95, x)),
-      y: Math.max(10, Math.min(80, y))
+      x: Math.max(15, Math.min(85, x)), // 左右边界更严格
+      y: Math.max(20, Math.min(50, y))  // 上下边界更严格，确保在标题区域
     };
   };
 
@@ -130,7 +133,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           id: wish.id,
           x: position.x,
           y: position.y,
-          size: wish.priority === 'high' ? 32 : wish.priority === 'medium' ? 28 : 24,
+          size: wish.priority === 'high' ? 28 : wish.priority === 'medium' ? 24 : 20,
           brightness: wish.priority === 'high' ? 1 : wish.priority === 'medium' ? 0.9 : 0.8,
           twinkleDelay: Math.random() * 3,
           color: getWishStarColor(wish.category, wish.priority),
@@ -175,13 +178,74 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* Main content with top padding to account for header */}
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
-        {/* Logo area */}
+        {/* Logo and title area with wish stars */}
         <div className="mb-6 sm:mb-8 relative">
+          {/* 用户的星愿星星 - 现在相对于这个容器定位，会随内容滚动 */}
+          {wishStars.map((star) => (
+            <div
+              key={star.id}
+              className="absolute group cursor-pointer z-20 wish-star-container"
+              style={{
+                left: `${star.x}%`,
+                top: `${star.y}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+              title={star.wish.title}
+            >
+              {/* 6角星本体 */}
+              <div
+                className="relative animate-pulse hover:animate-none transition-all duration-300 group-hover:scale-125 six-pointed-star"
+                style={{
+                  animationDelay: `${star.twinkleDelay}s`,
+                  animationDuration: `${2 + Math.random()}s`,
+                }}
+              >
+                <SixPointedStar
+                  size={star.size}
+                  color={star.color}
+                  brightness={star.brightness}
+                  className="drop-shadow-lg transition-all duration-300 star-glow-intense"
+                />
+                
+                {/* 额外的光晕效果 */}
+                <div
+                  className="absolute inset-0 rounded-full animate-ping opacity-30"
+                  style={{
+                    background: `radial-gradient(circle, ${star.color}60 0%, transparent 70%)`,
+                    animationDelay: `${star.twinkleDelay + 1}s`,
+                    animationDuration: '4s',
+                    width: `${star.size * 1.5}px`,
+                    height: `${star.size * 1.5}px`,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                />
+              </div>
+
+              {/* 悬停时显示的星愿信息 */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-30">
+                <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl whitespace-nowrap border border-white/20 shadow-xl star-tooltip">
+                  <div className="font-bold text-sm mb-1">{star.wish.title}</div>
+                  <div className="text-gray-300 text-xs flex items-center space-x-2">
+                    <span className="capitalize">{star.wish.category}</span>
+                    <span>•</span>
+                    <span className="capitalize">{star.wish.priority}</span>
+                  </div>
+                </div>
+                {/* 小箭头 */}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-transparent border-t-black/90"></div>
+              </div>
+            </div>
+          ))}
+
+          {/* Logo */}
           <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
             <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white relative z-10" fill="currentColor" />
           </div>
           
+          {/* Title */}
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4 leading-tight">
             {t('landing.title')}
           </h1>
@@ -189,65 +253,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
             {t('landing.subtitle')}
           </p>
         </div>
-
-        {/* 用户的星愿星星 - 6角星设计，现在在前景层 */}
-        {wishStars.map((star) => (
-          <div
-            key={star.id}
-            className="absolute group cursor-pointer z-20"
-            style={{
-              left: `${star.x}%`,
-              top: `${star.y}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-            title={star.wish.title}
-          >
-            {/* 6角星本体 */}
-            <div
-              className="relative animate-pulse hover:animate-none transition-all duration-300 group-hover:scale-125"
-              style={{
-                animationDelay: `${star.twinkleDelay}s`,
-                animationDuration: `${2 + Math.random()}s`,
-              }}
-            >
-              <SixPointedStar
-                size={star.size}
-                color={star.color}
-                brightness={star.brightness}
-                className="drop-shadow-lg transition-all duration-300"
-              />
-              
-              {/* 额外的光晕效果 */}
-              <div
-                className="absolute inset-0 rounded-full animate-ping opacity-30"
-                style={{
-                  background: `radial-gradient(circle, ${star.color}60 0%, transparent 70%)`,
-                  animationDelay: `${star.twinkleDelay + 1}s`,
-                  animationDuration: '4s',
-                  width: `${star.size * 1.5}px`,
-                  height: `${star.size * 1.5}px`,
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                }}
-              />
-            </div>
-
-            {/* 悬停时显示的星愿信息 */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-30">
-              <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl whitespace-nowrap border border-white/20 shadow-xl">
-                <div className="font-bold text-sm mb-1">{star.wish.title}</div>
-                <div className="text-gray-300 text-xs flex items-center space-x-2">
-                  <span className="capitalize">{star.wish.category}</span>
-                  <span>•</span>
-                  <span className="capitalize">{star.wish.priority}</span>
-                </div>
-              </div>
-              {/* 小箭头 */}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-transparent border-t-black/90"></div>
-            </div>
-          </div>
-        ))}
 
         {/* Stats - 只有在用户登录且有星愿时显示 */}
         {user && wishCount > 0 && (
