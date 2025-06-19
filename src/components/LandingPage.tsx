@@ -34,6 +34,90 @@ interface ShootingStar {
   delay: number;
 }
 
+// 6-pointed star SVG component
+const SixPointedStar: React.FC<{ 
+  size: number; 
+  color: string; 
+  brightness: number; 
+  className?: string;
+}> = ({ size, color, brightness, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    className={className}
+    style={{ 
+      filter: `drop-shadow(0 0 ${size * 0.3}px ${color}) drop-shadow(0 0 ${size * 0.6}px ${color}40)`,
+      opacity: brightness
+    }}
+  >
+    <path
+      d="M12 2L14.09 8.26L20 9L14.09 15.74L12 22L9.91 15.74L4 9L9.91 8.26L12 2Z"
+      fill={color}
+      stroke={color}
+      strokeWidth="0.5"
+    />
+    <path
+      d="M12 6L13.5 10.5L18 12L13.5 13.5L12 18L10.5 13.5L6 12L10.5 10.5L12 6Z"
+      fill="white"
+      opacity="0.8"
+    />
+  </svg>
+);
+
+// Halley's Comet component
+const HalleysComet: React.FC<{ 
+  startX: number; 
+  startY: number; 
+  endX: number; 
+  endY: number; 
+  duration: number; 
+  delay: number; 
+}> = ({ startX, startY, endX, endY, duration, delay }) => (
+  <div
+    className="absolute pointer-events-none"
+    style={{
+      left: `${startX}%`,
+      top: `${startY}%`,
+      animation: `halleysComet ${duration}s linear ${delay}s infinite`,
+      '--end-x': `${endX - startX}vw`,
+      '--end-y': `${endY - startY}vh`,
+    } as React.CSSProperties}
+  >
+    {/* Comet head */}
+    <div className="relative">
+      <div className="w-3 h-3 bg-gradient-to-r from-blue-200 via-white to-yellow-200 rounded-full relative z-10">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-yellow-300 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0.5 bg-white rounded-full opacity-90"></div>
+      </div>
+      
+      {/* Comet tail - multiple layers for realistic effect */}
+      <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-full">
+        {/* Main tail */}
+        <div className="w-16 h-1 bg-gradient-to-r from-blue-300/80 via-cyan-200/60 to-transparent rounded-full"></div>
+        {/* Secondary tail */}
+        <div className="w-12 h-0.5 bg-gradient-to-r from-yellow-200/70 via-orange-200/50 to-transparent rounded-full mt-0.5"></div>
+        {/* Dust trail */}
+        <div className="w-20 h-2 bg-gradient-to-r from-blue-100/40 via-cyan-100/30 to-transparent rounded-full -mt-1 blur-sm"></div>
+      </div>
+      
+      {/* Sparkle effects around comet head */}
+      {[...Array(6)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
+          style={{
+            left: `${Math.cos(i * 60 * Math.PI / 180) * 8}px`,
+            top: `${Math.sin(i * 60 * Math.PI / 180) * 8}px`,
+            animationDelay: `${i * 0.2}s`,
+            animationDuration: '1s',
+          }}
+        />
+      ))}
+    </div>
+  </div>
+);
+
 const LandingPage: React.FC<LandingPageProps> = ({ 
   onNavigate, 
   wishCount, 
@@ -69,57 +153,93 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return colors[category]?.[priority] || '#fbbf24';
   };
 
+  // 生成围绕中心区域的星愿星星位置
+  const generateStarPosition = (index: number, total: number) => {
+    // 创建多个同心圆环，星星围绕中心分布
+    const rings = Math.ceil(total / 8); // 每环最多8颗星
+    const currentRing = Math.floor(index / 8);
+    const positionInRing = index % 8;
+    
+    // 基础半径和角度
+    const baseRadius = 25 + currentRing * 15; // 从25%开始，每环增加15%
+    const angleStep = (2 * Math.PI) / Math.min(8, total - currentRing * 8);
+    const angle = positionInRing * angleStep + (currentRing * Math.PI / 8); // 每环稍微旋转
+    
+    // 添加一些随机偏移让分布更自然
+    const radiusOffset = (Math.random() - 0.5) * 8;
+    const angleOffset = (Math.random() - 0.5) * 0.3;
+    
+    const finalRadius = baseRadius + radiusOffset;
+    const finalAngle = angle + angleOffset;
+    
+    // 计算相对于中心的位置
+    const centerX = 50; // 页面中心
+    const centerY = 45; // 稍微偏上，避开内容区域
+    
+    const x = centerX + Math.cos(finalAngle) * finalRadius;
+    const y = centerY + Math.sin(finalAngle) * finalRadius * 0.6; // 垂直方向压缩，更符合视觉效果
+    
+    // 确保星星在可见区域内
+    return {
+      x: Math.max(5, Math.min(95, x)),
+      y: Math.max(10, Math.min(80, y))
+    };
+  };
+
   // 生成星愿星星
   useEffect(() => {
     if (user && wishes.length > 0) {
-      const stars: WishStar[] = wishes.map((wish, index) => ({
-        id: wish.id,
-        x: Math.random() * 100,
-        y: Math.random() * 80, // 避免与内容重叠
-        size: wish.priority === 'high' ? 6 : wish.priority === 'medium' ? 4 : 3,
-        brightness: wish.priority === 'high' ? 1 : wish.priority === 'medium' ? 0.8 : 0.6,
-        twinkleDelay: Math.random() * 3,
-        color: getWishStarColor(wish.category, wish.priority),
-        wish
-      }));
+      const stars: WishStar[] = wishes.map((wish, index) => {
+        const position = generateStarPosition(index, wishes.length);
+        return {
+          id: wish.id,
+          x: position.x,
+          y: position.y,
+          size: wish.priority === 'high' ? 32 : wish.priority === 'medium' ? 28 : 24,
+          brightness: wish.priority === 'high' ? 1 : wish.priority === 'medium' ? 0.9 : 0.8,
+          twinkleDelay: Math.random() * 3,
+          color: getWishStarColor(wish.category, wish.priority),
+          wish
+        };
+      });
       setWishStars(stars);
     } else {
       setWishStars([]);
     }
   }, [user, wishes]);
 
-  // 生成流星效果（仅当用户登录但没有星愿时）
+  // 生成哈雷彗星效果（仅当用户登录但没有星愿时）
   useEffect(() => {
     if (user && wishes.length === 0) {
-      const generateShootingStar = () => {
-        const star: ShootingStar = {
+      const generateComet = () => {
+        const comet: ShootingStar = {
           id: Math.random().toString(36).substr(2, 9),
-          startX: Math.random() * 100,
-          startY: Math.random() * 30,
-          endX: Math.random() * 100,
-          endY: Math.random() * 30 + 40,
-          duration: 2 + Math.random() * 2,
-          delay: Math.random() * 5
+          startX: Math.random() * 30, // 从左侧开始
+          startY: Math.random() * 40 + 10, // 上半部分
+          endX: Math.random() * 30 + 60, // 到右侧结束
+          endY: Math.random() * 40 + 40, // 下半部分
+          duration: 4 + Math.random() * 3, // 更慢的速度，更优雅
+          delay: Math.random() * 8
         };
-        return star;
+        return comet;
       };
 
-      // 创建初始流星
-      const initialStars = Array.from({ length: 3 }, generateShootingStar);
-      setShootingStars(initialStars);
+      // 创建初始彗星
+      const initialComets = Array.from({ length: 2 }, generateComet);
+      setShootingStars(initialComets);
 
       // 显示引导消息
       const messageTimer = setTimeout(() => {
         setShowShootingStarMessage(true);
-      }, 2000);
+      }, 3000);
 
-      // 定期生成新流星
+      // 定期生成新彗星
       const interval = setInterval(() => {
         setShootingStars(prev => {
-          const newStar = generateShootingStar();
-          return [...prev.slice(-2), newStar]; // 保持最多3颗流星
+          const newComet = generateComet();
+          return [...prev.slice(-1), newComet]; // 保持最多2颗彗星
         });
-      }, 4000);
+      }, 6000);
 
       return () => {
         clearTimeout(messageTimer);
@@ -147,7 +267,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
       {/* 星愿星空背景 */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* 用户的星愿星星 */}
+        {/* 用户的星愿星星 - 6角星设计 */}
         {wishStars.map((star) => (
           <div
             key={star.id}
@@ -159,108 +279,103 @@ const LandingPage: React.FC<LandingPageProps> = ({
             }}
             title={star.wish.title}
           >
-            {/* 星星本体 */}
+            {/* 6角星本体 */}
             <div
-              className="relative animate-pulse"
+              className="relative animate-pulse hover:animate-none transition-all duration-300 group-hover:scale-125"
               style={{
                 animationDelay: `${star.twinkleDelay}s`,
                 animationDuration: `${2 + Math.random()}s`,
               }}
             >
-              <Star
-                className="drop-shadow-lg transition-all duration-300 group-hover:scale-150"
-                style={{
-                  width: `${star.size * 4}px`,
-                  height: `${star.size * 4}px`,
-                  color: star.color,
-                  opacity: star.brightness,
-                  filter: `drop-shadow(0 0 ${star.size * 2}px ${star.color}40)`,
-                }}
-                fill="currentColor"
+              <SixPointedStar
+                size={star.size}
+                color={star.color}
+                brightness={star.brightness}
+                className="drop-shadow-lg transition-all duration-300"
               />
               
-              {/* 星星光晕 */}
+              {/* 额外的光晕效果 */}
               <div
-                className="absolute inset-0 rounded-full animate-ping opacity-20"
+                className="absolute inset-0 rounded-full animate-ping opacity-30"
                 style={{
-                  background: `radial-gradient(circle, ${star.color}40 0%, transparent 70%)`,
+                  background: `radial-gradient(circle, ${star.color}60 0%, transparent 70%)`,
                   animationDelay: `${star.twinkleDelay + 1}s`,
-                  animationDuration: '3s',
+                  animationDuration: '4s',
+                  width: `${star.size * 1.5}px`,
+                  height: `${star.size * 1.5}px`,
+                  left: '50%',
+                  top: '50%',
+                  transform: 'translate(-50%, -50%)',
                 }}
               />
             </div>
 
             {/* 悬停时显示的星愿信息 */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-              <div className="bg-black/80 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap border border-white/20">
-                <div className="font-medium">{star.wish.title}</div>
-                <div className="text-gray-300 text-xs">
-                  {star.wish.category} • {star.wish.priority}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+              <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl whitespace-nowrap border border-white/20 shadow-xl">
+                <div className="font-bold text-sm mb-1">{star.wish.title}</div>
+                <div className="text-gray-300 text-xs flex items-center space-x-2">
+                  <span className="capitalize">{star.wish.category}</span>
+                  <span>•</span>
+                  <span className="capitalize">{star.wish.priority}</span>
                 </div>
               </div>
               {/* 小箭头 */}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black/80"></div>
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-transparent border-t-black/90"></div>
             </div>
           </div>
         ))}
 
-        {/* 流星效果（仅当没有星愿时显示） */}
-        {shootingStars.map((star) => (
-          <div
-            key={star.id}
-            className="absolute pointer-events-none"
-            style={{
-              left: `${star.startX}%`,
-              top: `${star.startY}%`,
-              animation: `shootingStar ${star.duration}s linear ${star.delay}s infinite`,
-              '--end-x': `${star.endX - star.startX}vw`,
-              '--end-y': `${star.endY - star.startY}vh`,
-            } as React.CSSProperties}
-          >
-            <div className="w-2 h-2 bg-gradient-to-r from-yellow-300 to-transparent rounded-full">
-              <div className="absolute inset-0 bg-yellow-300 rounded-full animate-pulse"></div>
-              {/* 流星尾巴 */}
-              <div className="absolute top-1/2 left-0 w-8 h-0.5 bg-gradient-to-r from-yellow-300/80 to-transparent transform -translate-y-1/2 -translate-x-full"></div>
-            </div>
-          </div>
+        {/* 哈雷彗星效果（仅当没有星愿时显示） */}
+        {shootingStars.map((comet) => (
+          <HalleysComet
+            key={comet.id}
+            startX={comet.startX}
+            startY={comet.startY}
+            endX={comet.endX}
+            endY={comet.endY}
+            duration={comet.duration}
+            delay={comet.delay}
+          />
         ))}
 
-        {/* 背景装饰星星（静态） */}
-        {[...Array(30)].map((_, i) => (
+        {/* 背景装饰星星（静态，更少更精致） */}
+        {[...Array(15)].map((_, i) => (
           <div
             key={`bg-star-${i}`}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-40 animate-pulse"
+            className="absolute w-1 h-1 bg-white rounded-full opacity-30 animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
+              animationDuration: `${3 + Math.random() * 2}s`,
             }}
           />
         ))}
       </div>
 
-      {/* 流星引导气泡 */}
+      {/* 彗星引导气泡 */}
       {showShootingStarMessage && user && wishes.length === 0 && (
-        <div className="fixed top-1/4 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
-          <div className="bg-gradient-to-r from-purple-500/90 to-pink-500/90 backdrop-blur-sm text-white px-6 py-4 rounded-2xl border border-white/20 shadow-xl max-w-sm text-center">
-            <div className="flex items-center justify-center space-x-2 mb-2">
-              <Sparkles className="w-5 h-5 text-yellow-300" />
-              <span className="font-medium">流星划过夜空</span>
-              <Sparkles className="w-5 h-5 text-yellow-300" />
+        <div className="fixed top-1/3 left-1/2 transform -translate-x-1/2 z-20 animate-bounce">
+          <div className="bg-gradient-to-r from-blue-500/95 to-purple-500/95 backdrop-blur-sm text-white px-8 py-6 rounded-3xl border border-white/30 shadow-2xl max-w-sm text-center">
+            <div className="flex items-center justify-center space-x-2 mb-3">
+              <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
+              <span className="font-bold text-lg">哈雷彗星划过</span>
+              <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
             </div>
-            <p className="text-sm text-purple-100 mb-3">
-              快来播种你的第一颗星愿，让夜空绽放属于你的星光！
+            <p className="text-sm text-blue-100 mb-4 leading-relaxed">
+              传说中，向划过的彗星许愿会实现哦！<br/>
+              快来播种你的第一颗星愿吧 ✨
             </p>
             <button
               onClick={() => onNavigate('create')}
-              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all"
+              className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl text-sm font-medium transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
             >
-              播种星愿 ✨
+              🌟 播种星愿
             </button>
           </div>
           {/* 气泡尾巴 */}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-8 border-transparent border-t-purple-500/90"></div>
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-6 border-r-6 border-t-12 border-transparent border-t-blue-500/95"></div>
         </div>
       )}
 
@@ -286,7 +401,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <div className="mb-6 sm:mb-8">
             <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-full px-6 sm:px-8 py-3 sm:py-4 border border-white/20">
               <div className="flex items-center space-x-2">
-                <Star className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" fill="currentColor" />
+                <SixPointedStar size={20} color="#fbbf24" brightness={1} />
                 <span className="text-sm sm:text-base font-medium">
                   {wishCount} {t('landing.wishesPlanted')}
                 </span>
@@ -406,26 +521,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
       <div className="fixed top-20 right-20 opacity-20 hidden sm:block">
         <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-300 animate-bounce" />
       </div>
-
-      {/* CSS for shooting star animation */}
-      <style jsx>{`
-        @keyframes shootingStar {
-          0% {
-            transform: translate(0, 0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(var(--end-x), var(--end-y));
-            opacity: 0;
-          }
-        }
-      `}</style>
     </div>
   );
 };
