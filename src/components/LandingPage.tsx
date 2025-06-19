@@ -88,74 +88,40 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return colors[category]?.[priority] || '#fbbf24';
   };
 
-  // 检查位置是否与 Logo 区域冲突
-  const isPositionConflictingWithLogo = (x: number, y: number) => {
-    const logoX = 50; // Logo 在页面中心
-    const logoY = 25; // Logo 的大概位置（相对于标题区域）
-    const logoRadius = 15; // Logo 的安全半径
-    
-    const distance = Math.sqrt(Math.pow(x - logoX, 2) + Math.pow(y - logoY, 2));
-    return distance < logoRadius;
-  };
-
-  // 生成围绕标题区域的星愿星星位置 - 避开 Logo 区域
+  // 生成更自然的星愿星星分布 - 围绕标题区域但避开文字
   const generateStarPosition = (index: number, total: number) => {
     const centerX = 50; // 页面中心X
-    const centerY = 40; // 标题区域中心Y，稍微下移避开 Logo
+    const centerY = 35; // 标题区域中心Y，稍微上移
     
-    // 创建多个同心圆环，但避开 Logo 区域
-    const rings = Math.ceil(total / 8); // 每环最多8颗星
-    const currentRing = Math.floor(index / 8);
-    const positionInRing = index % 8;
+    // 创建多个分布区域，避开标题文字
+    const zones = [
+      // 标题上方区域
+      { centerX: 50, centerY: 15, radiusX: 35, radiusY: 8, weight: 0.3 },
+      // 标题左侧区域
+      { centerX: 20, centerY: 35, radiusX: 15, radiusY: 20, weight: 0.25 },
+      // 标题右侧区域
+      { centerX: 80, centerY: 35, radiusX: 15, radiusY: 20, weight: 0.25 },
+      // 标题下方区域
+      { centerX: 50, centerY: 55, radiusX: 40, radiusY: 10, weight: 0.2 },
+    ];
+
+    // 根据星愿数量和索引选择分布区域
+    const zoneIndex = index % zones.length;
+    const zone = zones[zoneIndex];
     
-    // 调整半径，从 Logo 外围开始
-    const baseRadius = 18 + currentRing * 10; // 从18%开始，确保不与 Logo 冲突
-    const maxRadius = 35; // 最大半径限制
+    // 在选定区域内生成随机位置
+    const angle = (index / total) * 2 * Math.PI + Math.random() * 0.5;
+    const radiusX = zone.radiusX * (0.3 + Math.random() * 0.7);
+    const radiusY = zone.radiusY * (0.3 + Math.random() * 0.7);
     
-    const angleStep = (2 * Math.PI) / Math.min(8, total - currentRing * 8);
-    let angle = positionInRing * angleStep + (currentRing * Math.PI / 8);
+    let x = zone.centerX + Math.cos(angle) * radiusX;
+    let y = zone.centerY + Math.sin(angle) * radiusY;
     
-    // 如果星星数量较少，优先分布在 Logo 的左右两侧
-    if (total <= 4) {
-      const preferredAngles = [
-        -Math.PI / 3,  // 右上
-        Math.PI / 3,   // 右下
-        -2 * Math.PI / 3, // 左上
-        2 * Math.PI / 3   // 左下
-      ];
-      if (index < preferredAngles.length) {
-        angle = preferredAngles[index];
-      }
-    }
+    // 确保星星在安全区域内
+    x = Math.max(10, Math.min(90, x));
+    y = Math.max(8, Math.min(65, y));
     
-    // 添加一些随机偏移让分布更自然
-    const radiusOffset = (Math.random() - 0.5) * 6;
-    const angleOffset = (Math.random() - 0.5) * 0.3;
-    
-    const finalRadius = Math.min(maxRadius, Math.max(18, baseRadius + radiusOffset));
-    const finalAngle = angle + angleOffset;
-    
-    // 计算相对于中心的位置
-    let x = centerX + Math.cos(finalAngle) * finalRadius;
-    let y = centerY + Math.sin(finalAngle) * finalRadius * 0.6; // 垂直方向压缩
-    
-    // 检查是否与 Logo 冲突，如果冲突则调整位置
-    let attempts = 0;
-    while (isPositionConflictingWithLogo(x, y) && attempts < 10) {
-      // 如果冲突，增加半径或调整角度
-      const newRadius = finalRadius + 5 + attempts * 3;
-      const newAngle = finalAngle + (attempts % 2 === 0 ? 0.5 : -0.5);
-      
-      x = centerX + Math.cos(newAngle) * newRadius;
-      y = centerY + Math.sin(newAngle) * newRadius * 0.6;
-      attempts++;
-    }
-    
-    // 严格限制星星在安全区域内
-    return {
-      x: Math.max(15, Math.min(85, x)),
-      y: Math.max(15, Math.min(55, y))
-    };
+    return { x, y };
   };
 
   // 生成星愿星星
@@ -167,7 +133,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           id: wish.id,
           x: position.x,
           y: position.y,
-          size: wish.priority === 'high' ? 28 : wish.priority === 'medium' ? 24 : 20,
+          size: wish.priority === 'high' ? 32 : wish.priority === 'medium' ? 28 : 24,
           brightness: wish.priority === 'high' ? 1 : wish.priority === 'medium' ? 0.9 : 0.8,
           twinkleDelay: Math.random() * 3,
           color: getWishStarColor(wish.category, wish.priority),
@@ -196,10 +162,10 @@ const LandingPage: React.FC<LandingPageProps> = ({
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
       {/* 背景装饰星星（静态，更少更精致） */}
       <div className="fixed inset-0 pointer-events-none">
-        {[...Array(15)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <div
             key={`bg-star-${i}`}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-30 animate-pulse"
+            className="absolute w-1 h-1 bg-white rounded-full opacity-20 animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -212,9 +178,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
       {/* Main content with top padding to account for header */}
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
-        {/* Logo and title area with wish stars */}
+        {/* Title area with wish stars - 去掉大logo */}
         <div className="mb-6 sm:mb-8 relative">
-          {/* 用户的星愿星星 - 现在相对于这个容器定位，会随内容滚动，并避开 Logo */}
+          {/* 用户的星愿星星 - 现在有更多空间，可以更自由地分布 */}
           {wishStars.map((star) => (
             <div
               key={star.id}
@@ -273,13 +239,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           ))}
 
-          {/* Logo */}
-          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden z-30">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
-            <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white relative z-10" fill="currentColor" />
-          </div>
-          
-          {/* Title */}
+          {/* Title - 现在是主要焦点，没有大logo干扰 */}
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4 leading-tight">
             {t('landing.title')}
           </h1>
