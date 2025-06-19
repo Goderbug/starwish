@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox } from 'lucide-react';
+import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User } from '@supabase/supabase-js';
 import { Wish } from '../lib/supabase';
@@ -65,6 +65,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const { t } = useLanguage();
   const [wishStars, setWishStars] = useState<WishStar[]>([]);
+  const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
 
   // 根据星愿类型获取颜色
   const getWishStarColor = (category: string, priority: string) => {
@@ -88,37 +89,35 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return colors[category]?.[priority] || '#fbbf24';
   };
 
-  // 生成更自然的星愿星星分布 - 只在上半部分区域，避开标题
+  // 生成星愿星星分布 - 限制在header下方，title上方的安全区域
   const generateStarPosition = (index: number, total: number) => {
-    // 创建多个分布区域，专门避开标题区域（大约在30-70%的Y轴位置）
-    const zones = [
-      // 顶部区域 - 标题上方
-      { centerX: 50, centerY: 15, radiusX: 40, radiusY: 12, weight: 0.4 },
-      // 左上角区域
-      { centerX: 20, centerY: 20, radiusX: 18, radiusY: 15, weight: 0.2 },
-      // 右上角区域
-      { centerX: 80, centerY: 20, radiusX: 18, radiusY: 15, weight: 0.2 },
+    // 定义安全区域：header下方(Y: 15-45%)，避开中心标题区域
+    const safeZones = [
+      // 左上区域
+      { centerX: 25, centerY: 25, radiusX: 20, radiusY: 12, weight: 0.3 },
+      // 右上区域  
+      { centerX: 75, centerY: 25, radiusX: 20, radiusY: 12, weight: 0.3 },
       // 左侧边缘
-      { centerX: 10, centerY: 40, radiusX: 8, radiusY: 25, weight: 0.1 },
+      { centerX: 15, centerY: 35, radiusX: 12, radiusY: 15, weight: 0.2 },
       // 右侧边缘
-      { centerX: 90, centerY: 40, radiusX: 8, radiusY: 25, weight: 0.1 },
+      { centerX: 85, centerY: 35, radiusX: 12, radiusY: 15, weight: 0.2 },
     ];
 
     // 根据星愿数量和索引选择分布区域
-    const zoneIndex = index % zones.length;
-    const zone = zones[zoneIndex];
+    const zoneIndex = index % safeZones.length;
+    const zone = safeZones[zoneIndex];
     
     // 在选定区域内生成随机位置
-    const angle = (index / total) * 2 * Math.PI + Math.random() * 0.5;
-    const radiusX = zone.radiusX * (0.3 + Math.random() * 0.7);
-    const radiusY = zone.radiusY * (0.3 + Math.random() * 0.7);
+    const angle = (index / total) * 2 * Math.PI + Math.random() * 0.8;
+    const radiusX = zone.radiusX * (0.4 + Math.random() * 0.6);
+    const radiusY = zone.radiusY * (0.4 + Math.random() * 0.6);
     
     let x = zone.centerX + Math.cos(angle) * radiusX;
     let y = zone.centerY + Math.sin(angle) * radiusY;
     
-    // 确保星星在安全区域内，避开标题区域
-    x = Math.max(5, Math.min(95, x));
-    y = Math.max(5, Math.min(55, y)); // 限制在上半部分，为标题留出空间
+    // 确保星星在安全区域内，保持边距
+    x = Math.max(8, Math.min(92, x));
+    y = Math.max(18, Math.min(45, y)); // 限制在header下方，title上方
     
     return { x, y };
   };
@@ -145,6 +144,27 @@ const LandingPage: React.FC<LandingPageProps> = ({
     }
   }, [user, wishes]);
 
+  // 处理星星点击
+  const handleStarClick = (e: React.MouseEvent, wish: Wish) => {
+    e.stopPropagation();
+    setSelectedWish(wish);
+  };
+
+  // 关闭星愿详情弹窗
+  const closeWishModal = () => {
+    setSelectedWish(null);
+  };
+
+  // 获取类型图标
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'gift': return Gift;
+      case 'experience': return Heart;
+      case 'moment': return Clock;
+      default: return Star;
+    }
+  };
+
   // 如果还在加载中，显示加载状态
   if (loading) {
     return (
@@ -159,9 +179,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
-      {/* 星愿星空背景 - 固定在顶部区域 */}
+      {/* 星愿星空背景 - 限制在安全区域 */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* 用户的星愿星星 - 只在上半部分显示 */}
+        {/* 用户的星愿星星 - 只在安全区域显示 */}
         {wishStars.map((star) => (
           <div
             key={star.id}
@@ -171,7 +191,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
               top: `${star.y}%`,
               transform: 'translate(-50%, -50%)',
             }}
-            title={star.wish.title}
+            onClick={(e) => handleStarClick(e, star.wish)}
+            title={`点击查看 ${star.wish.title}`}
           >
             {/* 6角星本体 */}
             <div
@@ -209,10 +230,11 @@ const LandingPage: React.FC<LandingPageProps> = ({
               <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl whitespace-nowrap border border-white/20 shadow-xl star-tooltip">
                 <div className="font-bold text-sm mb-1">{star.wish.title}</div>
                 <div className="text-gray-300 text-xs flex items-center space-x-2">
-                  <span className="capitalize">{star.wish.category}</span>
+                  <span className="capitalize">{t(`category.${star.wish.category}`)}</span>
                   <span>•</span>
-                  <span className="capitalize">{star.wish.priority}</span>
+                  <span className="capitalize">{t(`priority.${star.wish.priority}`)}</span>
                 </div>
+                <div className="text-purple-300 text-xs mt-1">点击查看详情</div>
               </div>
               {/* 小箭头 */}
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-transparent border-t-black/90"></div>
@@ -236,7 +258,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
       </div>
 
       {/* Main content - 增加顶部间距，避免与星星重叠 */}
-      <div className="text-center max-w-4xl mx-auto relative z-10 w-full" style={{ marginTop: '25vh' }}>
+      <div className="text-center max-w-4xl mx-auto relative z-10 w-full" style={{ marginTop: '30vh' }}>
         {/* Title area - 现在有足够的空间，不会与星星重叠 */}
         <div className="mb-6 sm:mb-8 relative">
           {/* Title - 现在是主要焦点，没有大logo干扰，与星星保持安全距离 */}
@@ -373,6 +395,136 @@ const LandingPage: React.FC<LandingPageProps> = ({
       <div className="fixed top-20 right-20 opacity-20 hidden sm:block">
         <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-300 animate-bounce" />
       </div>
+
+      {/* 星愿详情弹窗 */}
+      {selectedWish && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900/95 backdrop-blur-sm rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/20 relative overflow-hidden max-h-[90vh] overflow-y-auto">
+            {/* Background sparkles */}
+            <div className="absolute inset-0">
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-pulse"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 2}s`,
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="relative z-10">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${
+                    selectedWish.category === 'gift' ? 'from-pink-400 to-rose-400' :
+                    selectedWish.category === 'experience' ? 'from-purple-400 to-indigo-400' :
+                    'from-blue-400 to-cyan-400'
+                  } flex items-center justify-center`}>
+                    {React.createElement(getCategoryIcon(selectedWish.category), {
+                      className: "w-6 h-6 text-white"
+                    })}
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">星愿详情</h3>
+                    <p className="text-sm text-gray-400">{t(`category.${selectedWish.category}`)}</p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={closeWishModal}
+                  className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400 hover:text-white" />
+                </button>
+              </div>
+
+              {/* Wish content */}
+              <div className="space-y-4">
+                {/* Title */}
+                <div>
+                  <h4 className="text-xl font-bold text-white mb-2">{selectedWish.title}</h4>
+                  <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full ${
+                    selectedWish.priority === 'high' ? 'bg-red-500' :
+                    selectedWish.priority === 'medium' ? 'bg-amber-500' :
+                    'bg-emerald-500'
+                  }`}>
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-white text-xs font-medium">{t(`priority.${selectedWish.priority}`)}</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedWish.description && (
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">详细描述</h5>
+                    <p className="text-gray-200 leading-relaxed">{selectedWish.description}</p>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {selectedWish.tags && selectedWish.tags.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">标签</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedWish.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 bg-white/10 rounded-full text-xs text-gray-300"
+                        >
+                          <Tag className="w-3 h-3 mr-1" />
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Price */}
+                {selectedWish.estimated_price && (
+                  <div className="bg-yellow-500/10 rounded-xl p-4 border border-yellow-500/20">
+                    <h5 className="text-sm font-medium text-yellow-300 mb-1">预估价格</h5>
+                    <p className="text-yellow-400 font-medium">{selectedWish.estimated_price}</p>
+                  </div>
+                )}
+
+                {/* Notes */}
+                {selectedWish.notes && (
+                  <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/20">
+                    <h5 className="text-sm font-medium text-purple-300 mb-2">备注</h5>
+                    <p className="text-purple-200 italic">"{selectedWish.notes}"</p>
+                  </div>
+                )}
+
+                {/* Created date */}
+                <div className="flex items-center space-x-2 text-xs text-gray-400 pt-4 border-t border-white/10">
+                  <Calendar className="w-3 h-3" />
+                  <span>创建于 {new Date(selectedWish.created_at).toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</span>
+                </div>
+              </div>
+
+              {/* Action button */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <button
+                  onClick={closeWishModal}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-xl transition-all font-medium"
+                >
+                  关闭
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
