@@ -157,13 +157,44 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
-      {/* 星愿星空背景 */}
+      {/* 背景装饰星星（静态，更少更精致） */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* 用户的星愿星星 - 6角星设计 */}
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={`bg-star-${i}`}
+            className="absolute w-1 h-1 bg-white rounded-full opacity-30 animate-pulse"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 3}s`,
+              animationDuration: `${3 + Math.random() * 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Main content with top padding to account for header */}
+      <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
+        {/* Logo area */}
+        <div className="mb-6 sm:mb-8 relative">
+          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
+            <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white relative z-10" fill="currentColor" />
+          </div>
+          
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4 leading-tight">
+            {t('landing.title')}
+          </h1>
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-light">
+            {t('landing.subtitle')}
+          </p>
+        </div>
+
+        {/* 用户的星愿星星 - 6角星设计，现在在前景层 */}
         {wishStars.map((star) => (
           <div
             key={star.id}
-            className="absolute group cursor-pointer pointer-events-auto"
+            className="absolute group cursor-pointer z-20"
             style={{
               left: `${star.x}%`,
               top: `${star.y}%`,
@@ -203,7 +234,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
             {/* 悬停时显示的星愿信息 */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-30">
               <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl whitespace-nowrap border border-white/20 shadow-xl">
                 <div className="font-bold text-sm mb-1">{star.wish.title}</div>
                 <div className="text-gray-300 text-xs flex items-center space-x-2">
@@ -217,38 +248,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
         ))}
-
-        {/* 背景装饰星星（静态，更少更精致） */}
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={`bg-star-${i}`}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-30 animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Main content with top padding to account for header */}
-      <div className="text-center max-w-4xl mx-auto relative z-10 w-full">
-        {/* Logo area */}
-        <div className="mb-6 sm:mb-8 relative">
-          <div className="inline-flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
-            <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white relative z-10" fill="currentColor" />
-          </div>
-          
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4 leading-tight">
-            {t('landing.title')}
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-light">
-            {t('landing.subtitle')}
-          </p>
-        </div>
 
         {/* Stats - 只有在用户登录且有星愿时显示 */}
         {user && wishCount > 0 && (
