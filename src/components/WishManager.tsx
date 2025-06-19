@@ -195,35 +195,61 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // 检查按钮是否应该被禁用
-  const isWeaveButtonDisabled = () => {
-    // 如果认证状态还未初始化，禁用按钮
-    if (!initialized) {
-      console.log('🔐 认证状态未初始化，禁用按钮');
-      return true;
-    }
-    
-    // 如果正在生成链接，禁用按钮
+  // 修复后的按钮状态检查 - 更加严格和准确
+  const getWeaveButtonState = () => {
+    console.log('🔍 检查编织按钮状态:', {
+      initialized,
+      authLoading,
+      user: user ? { id: user.id, email: user.email } : null,
+      selectedWishesCount: selectedWishes.length,
+      isGeneratingLink
+    });
+
+    // 如果正在生成链接，显示生成中状态
     if (isGeneratingLink) {
-      console.log('🔄 正在生成链接，禁用按钮');
-      return true;
+      return {
+        disabled: true,
+        text: '编织中...',
+        reason: 'generating'
+      };
     }
-    
-    // 如果用户未登录，禁用按钮
+
+    // 如果认证状态还未初始化，显示初始化状态
+    if (!initialized) {
+      return {
+        disabled: true,
+        text: '初始化中...',
+        reason: 'initializing'
+      };
+    }
+
+    // 如果没有用户（已确认未登录），显示登录提示
     if (!user) {
-      console.log('❌ 用户未登录，禁用按钮');
-      return true;
+      return {
+        disabled: true,
+        text: '请先登录',
+        reason: 'not_authenticated'
+      };
     }
-    
-    // 如果没有选中的星愿，禁用按钮
+
+    // 如果没有选中星愿，显示选择提示
     if (selectedWishes.length === 0) {
-      console.log('📝 未选中星愿，禁用按钮');
-      return true;
+      return {
+        disabled: true,
+        text: '请选择星愿',
+        reason: 'no_selection'
+      };
     }
-    
-    console.log('✅ 按钮可用');
-    return false;
+
+    // 一切正常，可以编织
+    return {
+      disabled: false,
+      text: t('manager.weaveChain'),
+      reason: 'ready'
+    };
   };
+
+  const weaveButtonState = getWeaveButtonState();
 
   const generateShareLink = async () => {
     console.log('🔄 开始编织星链检查...', { 
@@ -1034,20 +1060,15 @@ const WishManager: React.FC<WishManagerProps> = ({
                       </button>
                       <button
                         onClick={generateShareLink}
-                        disabled={isWeaveButtonDisabled()}
+                        disabled={weaveButtonState.disabled}
                         className={`px-6 py-2 text-sm rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation ${
-                          isWeaveButtonDisabled()
+                          weaveButtonState.disabled
                             ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                             : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
                         }`}
                       >
                         <Share2 className="w-4 h-4" />
-                        <span>
-                          {!initialized ? '初始化中...' : 
-                           !user ? '请先登录' : 
-                           isGeneratingLink ? '编织中...' : 
-                           t('manager.weaveChain')}
-                        </span>
+                        <span>{weaveButtonState.text}</span>
                       </button>
                     </>
                   ) : (
