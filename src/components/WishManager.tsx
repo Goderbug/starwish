@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth(); // ✅ 只使用 user 和 loading
+  const { user } = useAuth(); // 只获取user，不再检查loading
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,16 +68,8 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 最简化的状态检查 - 如果还在加载，就禁用按钮
+  // ✅ 超级简化的状态检查 - 只检查选中的星愿数量和是否正在生成
   const canWeaveChain = useMemo(() => {
-    if (loading) {
-      console.log('🔄 认证状态加载中，禁用按钮');
-      return false;
-    }
-    if (!user) {
-      console.log('❌ 用户未登录，禁用按钮');
-      return false;
-    }
     if (selectedWishes.length === 0) {
       console.log('📝 未选中星愿，禁用按钮');
       return false;
@@ -86,9 +78,9 @@ const WishManager: React.FC<WishManagerProps> = ({
       console.log('🔄 正在生成链接，禁用按钮');
       return false;
     }
-    console.log('✅ 按钮可用');
+    console.log('✅ 按钮可用，选中星愿:', selectedWishes.length);
     return true;
-  }, [loading, user, selectedWishes.length, isGeneratingLink]);
+  }, [selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -213,33 +205,20 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 最简化的按钮文本逻辑
+  // ✅ 超级简化的按钮文本逻辑
   const getWeaveButtonText = () => {
-    if (loading) return '加载中...';
-    if (!user) return '请先登录';
-    if (selectedWishes.length === 0) return '请选择星愿';
     if (isGeneratingLink) return '编织中...';
+    if (selectedWishes.length === 0) return '请选择星愿';
     return t('manager.weaveChain');
   };
 
   const generateShareLink = useCallback(async () => {
     console.log('🔄 开始编织星链...', { 
-      user: user ? { id: user.id, email: user.email } : null,
       selectedWishesCount: selectedWishes.length,
-      loading
+      user: user ? { id: user.id, email: user.email } : null
     });
 
-    // ✅ 最简单的检查
-    if (loading) {
-      console.log('⏳ 认证状态加载中，等待...');
-      return;
-    }
-
-    if (!user) {
-      setError('请先登录');
-      return;
-    }
-
+    // ✅ 最简单的检查 - 只检查必要条件
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
@@ -247,6 +226,12 @@ const WishManager: React.FC<WishManagerProps> = ({
 
     if (isGeneratingLink) {
       return; // 防止重复点击
+    }
+
+    // 既然能到这个页面，用户肯定已经登录了，不需要再检查
+    if (!user) {
+      setError('用户状态异常，请刷新页面');
+      return;
     }
     
     setIsGeneratingLink(true);
@@ -312,7 +297,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [loading, user, selectedWishes, isGeneratingLink]);
+  }, [selectedWishes, isGeneratingLink, user]);
 
   const copyLink = async () => {
     try {
@@ -932,7 +917,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
-                      {/* ✅ 使用简化的状态检查 */}
+                      {/* ✅ 使用超级简化的状态检查 */}
                       <button
                         onClick={generateShareLink}
                         disabled={!canWeaveChain}
