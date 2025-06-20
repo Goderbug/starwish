@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Star, Calendar, User, Gift, Clock, Sparkles } from 'lucide-react';
+import { Heart, Star, Calendar, User, Gift, Clock, Sparkles, Check, X, Edit3 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, UserOpenedWish } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
 const ReceivedWishes: React.FC = () => {
   const { t } = useLanguage();
-  const { user } = useAuth(); // 使用用户ID而不是指纹
+  const { user } = useAuth();
   const [openedWishes, setOpenedWishes] = useState<UserOpenedWish[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 笔记编辑状态
+  const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>({});
+  const [savingNotes, setSavingNotes] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     if (user) {
@@ -20,7 +24,6 @@ const ReceivedWishes: React.FC = () => {
     if (!user) return;
 
     try {
-      // ✅ 修改：使用用户ID查询收到的星愿
       const { data, error } = await supabase
         .from('user_opened_wishes')
         .select(`
@@ -28,7 +31,7 @@ const ReceivedWishes: React.FC = () => {
           wish:wishes(*),
           star_chain:star_chains(*)
         `)
-        .eq('user_fingerprint', user.id) // 使用用户ID而不是指纹
+        .eq('user_fingerprint', user.id)
         .order('opened_at', { ascending: false });
 
       if (error) throw error;
@@ -61,22 +64,50 @@ const ReceivedWishes: React.FC = () => {
     }
   };
 
-  const updateNotes = async (wishId: string, notes: string) => {
+  // 开始编辑笔记
+  const startEditingNotes = (wishId: string, currentNotes: string) => {
+    setEditingNotes(prev => ({
+      ...prev,
+      [wishId]: currentNotes
+    }));
+  };
+
+  // 取消编辑笔记
+  const cancelEditingNotes = (wishId: string) => {
+    setEditingNotes(prev => {
+      const newState = { ...prev };
+      delete newState[wishId];
+      return newState;
+    });
+  };
+
+  // 保存笔记
+  const saveNotes = async (wishId: string) => {
+    const newNotes = editingNotes[wishId] || '';
+    
+    setSavingNotes(prev => ({ ...prev, [wishId]: true }));
+    
     try {
       const { error } = await supabase
         .from('user_opened_wishes')
-        .update({ notes })
+        .update({ notes: newNotes })
         .eq('id', wishId);
 
       if (error) throw error;
 
+      // 更新本地状态
       setOpenedWishes(prev =>
         prev.map(wish =>
-          wish.id === wishId ? { ...wish, notes } : wish
+          wish.id === wishId ? { ...wish, notes: newNotes } : wish
         )
       );
+
+      // 清除编辑状态
+      cancelEditingNotes(wishId);
     } catch (error) {
       console.error('Error updating notes:', error);
+    } finally {
+      setSavingNotes(prev => ({ ...prev, [wishId]: false }));
     }
   };
 
@@ -102,7 +133,6 @@ const ReceivedWishes: React.FC = () => {
     });
   };
 
-  // ✅ 新增：未登录状态处理
   if (!user) {
     return (
       <div className="min-h-screen p-4 flex items-center justify-center">
@@ -155,6 +185,8 @@ const ReceivedWishes: React.FC = () => {
               if (!wish) return null;
 
               const Icon = categoryIcons[wish.category];
+              const isEditingThisNote = editingNotes.hasOwnProperty(openedWish.id);
+              const isSavingThisNote = savingNotes[openedWish.id];
               
               return (
                 <div
@@ -238,18 +270,81 @@ const ReceivedWishes: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Personal notes */}
+                    {/* Personal notes section - 重新设计 */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-400 mb-2">
-                        {t('receivedWishes.yourNotes')}:
-                      </label>
-                      <textarea
-                        value={openedWish.notes}
-                        onChange={(e) => updateNotes(openedWish.id, e.target.value)}
-                        placeholder={t('receivedWishes.notesPlaceholder')}
-                        className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all resize-none text-sm"
-                        rows={2}
-                      />
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-400">
+                          {t('receivedWishes.yourNotes')}:
+                        </label>
+                        {!isEditingThisNote && (
+                          <button
+                            onClick={() => startEditingNotes(openedWish.id, openedWish.notes)}
+                            className="flex items-center space-x-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>编辑</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {isEditingThisNote ? (
+                        // 编辑模式
+                        <div className="space-y-3">
+                          <textarea
+                            value={editingNotes[openedWish.id] || ''}
+                            onChange={(e) => setEditingNotes(prev => ({
+                              ...prev,
+                              [openedWish.id]: e.target.value
+                            }))}
+                            placeholder={t('receivedWishes.notesPlaceholder')}
+                            className="w-full p-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all resize-none text-sm"
+                            rows={3}
+                            disabled={isSavingThisNote}
+                          />
+                          
+                          {/* 确认和取消按钮 */}
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => saveNotes(openedWish.id)}
+                              disabled={isSavingThisNote}
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white rounded-lg transition-all text-xs font-medium"
+                            >
+                              {isSavingThisNote ? (
+                                <>
+                                  <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                                  <span>保存中...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="w-3 h-3" />
+                                  <span>确认</span>
+                                </>
+                              )}
+                            </button>
+                            
+                            <button
+                              onClick={() => cancelEditingNotes(openedWish.id)}
+                              disabled={isSavingThisNote}
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600/50 text-white rounded-lg transition-all text-xs font-medium"
+                            >
+                              <X className="w-3 h-3" />
+                              <span>取消</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        // 显示模式
+                        <div 
+                          onClick={() => startEditingNotes(openedWish.id, openedWish.notes)}
+                          className="min-h-[60px] p-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 cursor-text hover:bg-white/10 transition-all text-sm flex items-start"
+                        >
+                          {openedWish.notes ? (
+                            <span className="text-gray-200">{openedWish.notes}</span>
+                          ) : (
+                            <span className="text-gray-500 italic">{t('receivedWishes.notesPlaceholder')}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Footer */}
