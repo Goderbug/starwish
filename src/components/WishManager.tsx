@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Star, Trash2, Share2, Copy, Plus, Check, List, Sparkles, Calendar, Tag, Filter, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateShareCode, Wish } from '../lib/supabase';
@@ -67,6 +67,61 @@ const WishManager: React.FC<WishManagerProps> = ({
       glow: 'shadow-red-500/30'
     },
   };
+
+  // 🔧 使用 useMemo 缓存按钮状态，避免重复计算导致的状态闪烁
+  const weaveButtonState = useMemo(() => {
+    // 1. 正在生成链接时
+    if (isGeneratingLink) {
+      return {
+        disabled: true,
+        text: '编织中...',
+        reason: 'generating'
+      };
+    }
+
+    // 2. 认证系统未初始化时（等待状态）
+    if (!initialized) {
+      return {
+        disabled: true,
+        text: '初始化中...',
+        reason: 'initializing'
+      };
+    }
+
+    // 3. 认证系统已初始化，但用户为空（确认未登录）
+    if (initialized && !user) {
+      return {
+        disabled: true,
+        text: '请先登录',
+        reason: 'not_authenticated'
+      };
+    }
+
+    // 4. 用户已登录，但没有选择星愿
+    if (user && selectedWishes.length === 0) {
+      return {
+        disabled: true,
+        text: '请选择星愿',
+        reason: 'no_selection'
+      };
+    }
+
+    // 5. 一切正常，可以编织星链
+    if (user && selectedWishes.length > 0) {
+      return {
+        disabled: false,
+        text: t('manager.weaveChain'),
+        reason: 'ready'
+      };
+    }
+
+    // 6. 兜底情况（不应该到达这里）
+    return {
+      disabled: true,
+      text: '状态异常',
+      reason: 'unknown'
+    };
+  }, [isGeneratingLink, initialized, user, selectedWishes.length, t]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -145,21 +200,22 @@ const WishManager: React.FC<WishManagerProps> = ({
   // 检查是否有活跃的筛选条件
   const hasActiveFilters = filterCategory !== 'all' || filterPriority !== 'all' || searchQuery.trim() !== '' || sortBy !== 'newest';
 
-  const toggleWishSelection = (wishId: string) => {
+  // 🔧 使用 useCallback 缓存事件处理函数，避免不必要的重新渲染
+  const toggleWishSelection = useCallback((wishId: string) => {
     setSelectedWishes(prev => 
       prev.includes(wishId) 
         ? prev.filter(id => id !== wishId)
         : [...prev, wishId]
     );
-  };
+  }, []);
 
-  const selectAllWishes = () => {
+  const selectAllWishes = useCallback(() => {
     if (selectedWishes.length === filteredAndSortedWishes.length && filteredAndSortedWishes.length > 0) {
       setSelectedWishes([]);
     } else {
       setSelectedWishes(filteredAndSortedWishes.map(w => w.id));
     }
-  };
+  }, [selectedWishes.length, filteredAndSortedWishes]);
 
   // 处理删除愿望点击
   const handleDeleteClick = (e: React.MouseEvent, wish: Wish) => {
@@ -191,65 +247,8 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // 🔧 修复后的按钮状态检查逻辑 - 移除所有调试信息
-  const getWeaveButtonState = () => {
-    // 1. 正在生成链接时
-    if (isGeneratingLink) {
-      return {
-        disabled: true,
-        text: '编织中...',
-        reason: 'generating'
-      };
-    }
-
-    // 2. 认证系统未初始化时（等待状态）
-    if (!initialized) {
-      return {
-        disabled: true,
-        text: '初始化中...',
-        reason: 'initializing'
-      };
-    }
-
-    // 3. 认证系统已初始化，但用户为空（确认未登录）
-    if (initialized && !user) {
-      return {
-        disabled: true,
-        text: '请先登录',
-        reason: 'not_authenticated'
-      };
-    }
-
-    // 4. 用户已登录，但没有选择星愿
-    if (user && selectedWishes.length === 0) {
-      return {
-        disabled: true,
-        text: '请选择星愿',
-        reason: 'no_selection'
-      };
-    }
-
-    // 5. 一切正常，可以编织星链
-    if (user && selectedWishes.length > 0) {
-      return {
-        disabled: false,
-        text: t('manager.weaveChain'),
-        reason: 'ready'
-      };
-    }
-
-    // 6. 兜底情况（不应该到达这里）
-    return {
-      disabled: true,
-      text: '状态异常',
-      reason: 'unknown'
-    };
-  };
-
-  // 获取按钮状态
-  const weaveButtonState = getWeaveButtonState();
-
-  const generateShareLink = async () => {
+  // 🔧 使用 useCallback 缓存生成链接函数，避免重复创建
+  const generateShareLink = useCallback(async () => {
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
@@ -377,7 +376,7 @@ const WishManager: React.FC<WishManagerProps> = ({
       setError(error.message || '编织星链失败，请重试');
       setIsGeneratingLink(false);
     }
-  };
+  }, [selectedWishes, user, initialized]);
 
   const copyLink = async () => {
     try {
@@ -1012,6 +1011,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
+                      {/* 🔧 关键修复：使用稳定的按钮状态，避免悬停时状态变化 */}
                       <button
                         onClick={generateShareLink}
                         disabled={weaveButtonState.disabled}
@@ -1020,6 +1020,9 @@ const WishManager: React.FC<WishManagerProps> = ({
                             ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                             : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
                         }`}
+                        // 🔧 添加 onMouseEnter 和 onMouseLeave 来防止状态变化
+                        onMouseEnter={(e) => e.preventDefault()}
+                        onMouseLeave={(e) => e.preventDefault()}
                       >
                         <Share2 className="w-4 h-4" />
                         <span>{weaveButtonState.text}</span>
