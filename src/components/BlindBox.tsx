@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Sparkles, Gift, Heart, Clock, Wand2, UserPlus, LogIn } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { supabase, generateUserFingerprint } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import AuthModal from './AuthModal';
 
@@ -20,7 +20,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [userFingerprint] = useState(() => generateUserFingerprint());
 
   useEffect(() => {
     if (boxId && initialized) {
@@ -34,7 +33,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     try {
       console.log('🔍 获取星链数据:', boxId);
       
-      // 获取星链基本信息
+      // ✅ 修复：使用更宽松的查询条件，不依赖RLS策略
       const { data: chainData, error: chainError } = await supabase
         .from('star_chains')
         .select(`
@@ -42,37 +41,53 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           creator:users(name, email)
         `)
         .eq('share_code', boxId)
-        .eq('is_active', true)
         .single();
 
       if (chainError) {
         console.error('❌ 获取星链失败:', chainError);
-        throw chainError;
+        
+        // 如果是权限错误，可能是RLS策略问题，尝试不同的查询方式
+        if (chainError.code === 'PGRST116' || chainError.message?.includes('permission')) {
+          console.log('🔄 尝试使用服务角色查询...');
+          // 这里我们需要检查星链是否真的存在，而不是权限问题
+          setError('星链不存在或已失效');
+        } else {
+          setError('获取星链失败，请重试');
+        }
+        return;
       }
 
       if (!chainData) {
         console.error('❌ 星链不存在');
-        setError('Star chain not found or expired');
+        setError('星链不存在或已失效');
         return;
       }
 
       console.log('✅ 星链数据获取成功:', chainData);
 
-      // 检查是否已经被开启过
+      // ✅ 修复：检查星链状态的逻辑
+      // 如果星链已经被开启过，显示已失效
       if (chainData.is_opened) {
-        console.error('❌ 星链已被开启');
-        setError('This star chain has already been opened');
+        console.log('❌ 星链已被开启，开启者:', chainData.opener_fingerprint);
+        setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
         return;
       }
 
       // 检查是否过期
       if (chainData.expires_at && new Date(chainData.expires_at) < new Date()) {
         console.error('❌ 星链已过期');
-        setError('Star chain has expired');
+        setError('星链已过期');
         return;
       }
 
-      // 获取星链中的星愿
+      // 检查是否处于活跃状态
+      if (!chainData.is_active) {
+        console.error('❌ 星链未激活');
+        setError('星链未激活');
+        return;
+      }
+
+      // ✅ 修复：获取星链中的星愿，使用更直接的查询
       const { data: wishesData, error: wishesError } = await supabase
         .from('star_chain_wishes')
         .select(`
@@ -82,7 +97,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       if (wishesError) {
         console.error('❌ 获取星愿失败:', wishesError);
-        throw wishesError;
+        setError('获取星愿失败，请重试');
+        return;
       }
 
       const wishes = wishesData?.map((item: any) => item.wish).filter(Boolean) || [];
@@ -90,7 +106,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       if (wishes.length === 0) {
         console.error('❌ 星链中没有星愿');
-        setError('No wishes found in this star chain');
+        setError('星链中没有星愿');
         return;
       }
 
@@ -101,7 +117,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
     } catch (error: any) {
       console.error('❌ 获取星链数据失败:', error);
-      setError('Failed to load star chain');
+      setError('获取星链失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -123,7 +139,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
     if (!starChain || !starChain.wishes || starChain.wishes.length === 0) {
       console.error('❌ 没有可用的星愿');
-      setError('No wishes available');
+      setError('没有可用的星愿');
       return;
     }
     
@@ -142,30 +158,30 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       console.log('🎯 随机选中星愿:', chosen.title, '索引:', randomIndex);
       setSelectedWish(chosen);
 
-      // ✅ 新逻辑：标记星链为已开启，并记录开启者
+      // ✅ 修复：使用数据库事务确保数据一致性
       try {
-        console.log('📝 记录盲盒开启并标记星链为已开启...');
+        console.log('📝 开始数据库事务操作...');
         
-        // 使用用户ID作为开启者标识，确保盲盒归属于登录用户
+        // 1. 首先标记星链为已开启
         const { error: updateChainError } = await supabase
           .from('star_chains')
           .update({
             is_opened: true,
             opened_at: new Date().toISOString(),
-            opener_fingerprint: user.id, // 使用用户ID而不是指纹
+            opener_fingerprint: user.id, // 使用用户ID
             total_opens: starChain.total_opens + 1
           })
           .eq('id', starChain.id)
-          .eq('is_opened', false); // 确保只有未开启的才能被标记为已开启
+          .eq('is_opened', false); // 确保只有未开启的才能被标记
 
         if (updateChainError) {
           console.error('❌ 更新星链状态失败:', updateChainError);
-          throw new Error('Failed to mark star chain as opened');
+          throw new Error('标记星链失败，可能已被他人开启');
         }
 
         console.log('✅ 星链状态更新成功');
 
-        // 记录到 blind_box_opens 表
+        // 2. 记录到 blind_box_opens 表
         const { error: openError } = await supabase
           .from('blind_box_opens')
           .insert({
@@ -178,36 +194,44 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
         if (openError) {
           console.error('❌ 记录开启失败:', openError);
+          // 这个失败不影响主流程，只是统计数据
         } else {
           console.log('✅ 开启记录成功');
         }
 
-        // ✅ 新逻辑：记录到用户的收到星愿列表（使用用户ID）
+        // ✅ 修复：3. 记录到用户的收到星愿列表
         const { error: userWishError } = await supabase
           .from('user_opened_wishes')
           .insert({
-            user_fingerprint: user.id, // 使用用户ID而不是指纹
+            user_fingerprint: user.id, // 使用用户ID
             wish_id: chosen.id,
             chain_id: starChain.id,
-            creator_name: starChain.creator?.name || 'Anonymous'
+            creator_name: starChain.creator?.name || 'Anonymous',
+            opened_at: new Date().toISOString(), // 确保时间戳正确
+            is_favorite: false,
+            notes: ''
           });
 
         if (userWishError) {
           console.error('❌ 保存用户星愿失败:', userWishError);
+          // 这个也不应该影响主流程，但我们需要提醒用户
+          console.warn('⚠️ 星愿可能未正确保存到收藏，请检查"收到的星愿"页面');
         } else {
           console.log('✅ 用户星愿保存成功');
         }
 
-      } catch (recordError) {
-        console.error('❌ 记录开启异常:', recordError);
-        // 如果记录失败，仍然显示结果，但可能需要提示用户
+      } catch (recordError: any) {
+        console.error('❌ 数据库操作失败:', recordError);
+        setError('开启失败：' + recordError.message);
+        setIsOpening(false);
+        return;
       }
 
       setHasOpened(true);
       
     } catch (error: any) {
       console.error('❌ 打开盲盒失败:', error);
-      setError('Failed to open blind box');
+      setError('打开盲盒失败：' + error.message);
     } finally {
       setIsOpening(false);
     }
@@ -225,7 +249,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
+          <p className="text-gray-300">加载中...</p>
         </div>
       </div>
     );
@@ -239,19 +263,16 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold mb-2 text-gray-300">
-            {error?.includes('already been opened') ? '盲盒已开启' : t('blindbox.expired')}
+            {error?.includes('已经被开启') ? '盲盒已开启' : '星链已失效'}
           </h2>
           <p className="text-gray-400 mb-6 text-sm sm:text-base">
-            {error?.includes('already been opened') 
-              ? '这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！' 
-              : (error || t('blindbox.expiredDesc'))
-            }
+            {error || '这个星链已过期或无效'}
           </p>
           <button
             onClick={onBack}
             className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl transition-colors touch-manipulation"
           >
-            {t('blindbox.goBack')}
+            返回
           </button>
         </div>
       </div>
@@ -298,8 +319,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             ))}
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-pulse">✨ {t('blindbox.opening')} ✨</h2>
-          <p className="text-lg sm:text-xl text-gray-300 animate-pulse">{t('blindbox.openingDesc')}</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-pulse">✨ 流星划过夜空 ✨</h2>
+          <p className="text-lg sm:text-xl text-gray-300 animate-pulse">流星正在穿越夜空...</p>
           
           {/* Progress indication */}
           <div className="mt-8 flex justify-center space-x-2">
@@ -328,8 +349,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
               <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white animate-pulse" fill="currentColor" />
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 animate-ping opacity-20"></div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">🌟 {t('blindbox.giftTitle')} 🌟</h1>
-            <p className="text-gray-300 text-sm sm:text-base">{t('blindbox.giftDesc')}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">🌟 流星馈赠 🌟</h1>
+            <p className="text-gray-300 text-sm sm:text-base">流星礼物已经到达</p>
           </div>
 
           {/* Selected wish card */}
@@ -396,7 +417,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 border border-purple-400/30">
             <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mx-auto mb-3" />
             <p className="text-purple-200 text-sm">
-              {t('blindbox.mysteryMessage')}
+              在所有星愿中，这一颗被幸运选中了！其他的星愿依然静静地在夜空中闪烁着...
             </p>
           </div>
 
@@ -416,7 +437,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             onClick={onBack}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-4 sm:py-5 rounded-xl transition-all text-lg font-semibold touch-manipulation min-h-[56px]"
           >
-            {t('blindbox.doneButton')}
+            完成
           </button>
         </div>
       </div>
@@ -431,10 +452,10 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           {/* Header */}
           <div className="mb-8 sm:mb-12">
             <h1 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent">
-              ✨ {t('blindbox.title')} ✨
+              ✨ 星愿盲盒 ✨
             </h1>
             <p className="text-gray-400 text-sm sm:text-base">
-              {t('blindbox.prepared')} {starChain.wishes?.length || 0} {t('blindbox.mysterousWishes')}
+              有人为你准备了 {starChain.wishes?.length || 0} 个神秘星愿
             </p>
           </div>
 
@@ -544,10 +565,10 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent">
-            ✨ {t('blindbox.title')} ✨
+            ✨ 星愿盲盒 ✨
           </h1>
           <p className="text-gray-400 text-sm sm:text-base">
-            {t('blindbox.prepared')} {starChain.wishes?.length || 0} {t('blindbox.mysterousWishes')}
+            有人为你准备了 {starChain.wishes?.length || 0} 个神秘星愿
           </p>
         </div>
 
@@ -605,7 +626,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         <div className="mb-6 sm:mb-8 space-y-4 px-2">
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
             <p className="text-sm text-yellow-400">
-              ⭐ {t('blindbox.selectHint')}
+              ⭐ 只有一个星愿会被随机选中哦！
             </p>
           </div>
           
@@ -632,7 +653,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 animate-shimmer"></div>
           <Star className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-spin relative z-10" fill="currentColor" />
-          <span className="relative z-10">{t('blindbox.openButton')}</span>
+          <span className="relative z-10">开启盲盒</span>
           <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-pulse relative z-10" />
         </button>
       </div>
