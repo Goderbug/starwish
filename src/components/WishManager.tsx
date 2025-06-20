@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth(); // 只获取user，不再检查loading
+  const { user } = useAuth();
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,18 +68,19 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 超级简化的状态检查 - 只检查选中的星愿数量和是否正在生成
+  // ✅ 关键修复：超级简化的状态检查 - 移除所有用户状态检查
   const canWeaveChain = useMemo(() => {
-    if (selectedWishes.length === 0) {
-      console.log('📝 未选中星愿，禁用按钮');
-      return false;
-    }
-    if (isGeneratingLink) {
-      console.log('🔄 正在生成链接，禁用按钮');
-      return false;
-    }
-    console.log('✅ 按钮可用，选中星愿:', selectedWishes.length);
-    return true;
+    // 只检查最基本的条件：是否选中星愿和是否正在生成
+    const hasSelectedWishes = selectedWishes.length > 0;
+    const notGenerating = !isGeneratingLink;
+    
+    console.log('🔍 检查编织条件:', {
+      hasSelectedWishes,
+      notGenerating,
+      selectedCount: selectedWishes.length
+    });
+    
+    return hasSelectedWishes && notGenerating;
   }, [selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
@@ -205,34 +206,32 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 超级简化的按钮文本逻辑
+  // ✅ 关键修复：超级简化的按钮文本逻辑
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
     if (selectedWishes.length === 0) return '请选择星愿';
     return t('manager.weaveChain');
   };
 
+  // ✅ 关键修复：完全移除用户状态检查的编织函数
   const generateShareLink = useCallback(async () => {
     console.log('🔄 开始编织星链...', { 
-      selectedWishesCount: selectedWishes.length,
-      user: user ? { id: user.id, email: user.email } : null
+      selectedWishesCount: selectedWishes.length
     });
 
-    // ✅ 最简单的检查 - 只检查必要条件
+    // ✅ 只检查最基本的条件
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
     }
 
     if (isGeneratingLink) {
-      return; // 防止重复点击
-    }
-
-    // 既然能到这个页面，用户肯定已经登录了，不需要再检查
-    if (!user) {
-      setError('用户状态异常，请刷新页面');
+      console.log('⚠️ 正在生成中，忽略重复请求');
       return;
     }
+
+    // ✅ 移除用户状态检查 - 既然能到这个页面，用户肯定已经登录
+    // 如果真的没有用户，让数据库操作自然失败并显示错误
     
     setIsGeneratingLink(true);
     setError(null);
@@ -241,9 +240,14 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // ✅ 直接使用 user，如果为 null 会在数据库操作时失败
+      if (!user) {
+        throw new Error('用户状态异常，请刷新页面重试');
+      }
+      
       // 创建星链
       const shareCode = generateShareCode();
-      console.log('📝 创建星链记录...', { shareCode });
+      console.log('📝 创建星链记录...', { shareCode, userId: user.id });
       
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
@@ -917,7 +921,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
-                      {/* ✅ 使用超级简化的状态检查 */}
+                      {/* ✅ 使用修复后的状态检查 */}
                       <button
                         onClick={generateShareLink}
                         disabled={!canWeaveChain}
