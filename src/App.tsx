@@ -15,7 +15,7 @@ import { useLanguage } from './contexts/LanguageContext';
 // Main App component wrapped with language context
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
-  const { user, loading, initialized } = useAuth();
+  const { user, loading } = useAuth(); // ✅ 简化：只使用 user 和 loading
   const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox' | 'shareHistory' | 'receivedWishes'>('landing');
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
@@ -34,11 +34,11 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  // Load wishes from database when user is authenticated
+  // ✅ 简化：只在用户状态确定后加载数据
   useEffect(() => {
-    // 只有在认证状态已初始化后才执行
-    if (!initialized) {
-      console.log('⏳ 认证状态未初始化，等待中...');
+    // 如果还在加载认证状态，等待
+    if (loading) {
+      console.log('⏳ 认证状态加载中，等待...');
       return;
     }
 
@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
         setCurrentPage('landing');
       }
     }
-  }, [user, initialized, currentPage]);
+  }, [user, loading, currentPage]);
 
   const fetchWishes = async () => {
     if (!user) return;
@@ -192,8 +192,8 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // 显示加载状态，直到认证状态初始化完成
-  if (!initialized) {
+  // ✅ 简化：只在认证状态加载时显示加载界面
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
         <div className="text-center">
@@ -229,10 +229,8 @@ const AppContent: React.FC = () => {
             onNavigate={setCurrentPage}
             wishCount={wishes.length}
             onAuthRequired={handleAuthRequired}
-            // 传递认证状态，确保组件能正确判断
             user={user}
             loading={loading}
-            // 传递星愿数据用于生成星空
             wishes={wishes}
           />
         )}

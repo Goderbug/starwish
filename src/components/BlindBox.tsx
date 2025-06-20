@@ -12,20 +12,21 @@ interface BlindBoxProps {
 
 const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const { t } = useLanguage();
-  const { user, initialized } = useAuth();
+  const { user, loading } = useAuth(); // ✅ 简化：只使用 user 和 loading
   const [starChain, setStarChain] = useState<any>(null);
   const [selectedWish, setSelectedWish] = useState<any>(null);
   const [isOpening, setIsOpening] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [componentLoading, setComponentLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // ✅ 简化：只在认证状态确定且有boxId时获取数据
   useEffect(() => {
-    if (boxId && initialized) {
+    if (boxId && !loading) {
       fetchStarChain();
     }
-  }, [boxId, initialized]);
+  }, [boxId, loading]);
 
   const fetchStarChain = async () => {
     if (!boxId) return;
@@ -118,7 +119,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       console.error('❌ 获取星链数据失败:', error);
       setError('获取星链失败，请重试');
     } finally {
-      setLoading(false);
+      setComponentLoading(false);
     }
   };
 
@@ -250,7 +251,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     }
   }, [user, showAuthModal]);
 
-  if (!initialized || loading) {
+  // ✅ 简化：只在认证状态加载或组件加载时显示加载界面
+  if (loading || componentLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">

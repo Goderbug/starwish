@@ -5,109 +5,66 @@ import { supabase } from '../lib/supabase';
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     let authSubscription: any = null;
 
-    // Helper function to check if error is related to invalid refresh token
-    const isRefreshTokenError = (error: any): boolean => {
-      if (!error) return false;
-      const message = error.message || '';
-      const code = error.code || '';
-      return (
-        message.includes('refresh_token_not_found') ||
-        message.includes('Invalid Refresh Token') ||
-        code === 'refresh_token_not_found' ||
-        message.includes('Refresh Token Not Found')
-      );
-    };
-
-    // Helper function to safely clear invalid session
-    const clearInvalidSession = async () => {
+    // 简化的初始化函数
+    const initializeAuth = async () => {
       try {
-        console.log('🧹 清除无效会话...');
-        await supabase.auth.signOut();
-        if (mounted) {
-          setUser(null);
-        }
-      } catch (signOutError) {
-        console.error('❌ 清除会话时发生错误:', signOutError);
-        // Force clear the user state even if signOut fails
-        if (mounted) {
-          setUser(null);
-        }
-      }
-    };
-
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        console.log('🔍 获取初始会话...');
+        console.log('🔍 初始化认证状态...');
+        
+        // 获取当前会话
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
           if (error) {
-            if (isRefreshTokenError(error)) {
-              console.log('🔄 检测到无效刷新令牌，清除本地会话...');
-              await clearInvalidSession();
-            } else {
-              console.error('❌ 获取会话失败:', error);
-              setUser(null);
+            console.error('❌ 获取会话失败:', error);
+            // 如果是刷新令牌错误，静默处理
+            if (error.message?.includes('refresh_token') || error.message?.includes('Invalid Refresh Token')) {
+              console.log('🧹 检测到无效令牌，清除状态');
+              try {
+                await supabase.auth.signOut();
+              } catch (signOutError) {
+                console.error('登出失败:', signOutError);
+              }
             }
-          } else if (session?.user) {
-            console.log('✅ 发现现有会话:', session.user.email);
-            setUser(session.user);
-          } else {
-            console.log('ℹ️ 未找到现有会话');
             setUser(null);
+          } else {
+            setUser(session?.user || null);
+            if (session?.user) {
+              console.log('✅ 用户已登录:', session.user.email);
+            } else {
+              console.log('ℹ️ 用户未登录');
+            }
           }
           setLoading(false);
-          setInitialized(true);
         }
       } catch (error: any) {
-        console.error('❌ 获取会话异常:', error);
-        
+        console.error('❌ 初始化认证异常:', error);
         if (mounted) {
-          if (isRefreshTokenError(error)) {
-            console.log('🔄 检测到无效刷新令牌异常，清除本地会话...');
-            await clearInvalidSession();
-          } else {
-            setUser(null);
-          }
+          setUser(null);
           setLoading(false);
-          setInitialized(true);
         }
       }
     };
 
-    // Set up auth state listener BEFORE getting initial session
+    // 设置认证状态监听器
     const setupAuthListener = () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           console.log('🔄 认证状态变化:', event, session?.user?.email || '无用户');
           
           if (mounted) {
-            // Handle token refresh errors in auth state changes
-            if (event === 'TOKEN_REFRESHED' && !session) {
-              console.log('🔄 令牌刷新失败，清除会话...');
-              await clearInvalidSession();
-              setLoading(false);
-              setInitialized(true);
-              return;
-            }
-
-            // 立即更新用户状态，确保UI同步
-            const newUser = session?.user ?? null;
-            setUser(newUser);
+            // 立即更新用户状态
+            setUser(session?.user || null);
             setLoading(false);
-            setInitialized(true);
 
-            // 在后台处理用户资料更新，不阻塞UI
+            // 处理用户资料更新（后台异步）
             if (event === 'SIGNED_IN' && session?.user) {
-              console.log('✅ 用户登录成功，更新用户资料...');
-              // 异步处理，不等待结果
+              console.log('✅ 用户登录，更新资料...');
+              // 异步更新用户资料，不阻塞UI
               supabase
                 .from('users')
                 .upsert({
@@ -142,19 +99,18 @@ export const useAuth = () => {
       return subscription;
     };
 
-    // Set a timeout to prevent infinite loading
+    // 设置超时保护
     const timeoutId = setTimeout(() => {
-      if (mounted && !initialized) {
-        console.warn('⚠️ 认证初始化超时 - 设置为未登录状态');
+      if (mounted && loading) {
+        console.warn('⚠️ 认证初始化超时，设置为未登录状态');
         setUser(null);
         setLoading(false);
-        setInitialized(true);
       }
-    }, 3000);
+    }, 2000); // 减少到2秒
 
-    // 先设置监听器，再获取初始会话
+    // 先设置监听器，再初始化
     setupAuthListener();
-    getInitialSession();
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -165,5 +121,6 @@ export const useAuth = () => {
     };
   }, []);
 
-  return { user, loading, initialized };
+  // 简化返回值，去除 initialized
+  return { user, loading };
 };
