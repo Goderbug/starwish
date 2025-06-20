@@ -12,7 +12,7 @@ interface BlindBoxProps {
 
 const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, initialized } = useAuth();
   const [starChain, setStarChain] = useState<any>(null);
   const [selectedWish, setSelectedWish] = useState<any>(null);
   const [isOpening, setIsOpening] = useState(false);
@@ -23,10 +23,10 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const [userFingerprint] = useState(() => generateUserFingerprint());
 
   useEffect(() => {
-    if (boxId) {
+    if (boxId && initialized) {
       fetchStarChain();
     }
-  }, [boxId]);
+  }, [boxId, initialized]);
 
   const fetchStarChain = async () => {
     if (!boxId) return;
@@ -114,6 +114,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   };
 
   const openBlindBox = async () => {
+    // ✅ 新逻辑：必须登录才能打开盲盒
+    if (!user) {
+      console.log('🔐 用户未登录，显示登录提示');
+      setShowAuthModal(true);
+      return;
+    }
+
     if (!starChain || !starChain.wishes || starChain.wishes.length === 0) {
       console.error('❌ 没有可用的星愿');
       setError('No wishes available');
@@ -135,17 +142,17 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       console.log('🎯 随机选中星愿:', chosen.title, '索引:', randomIndex);
       setSelectedWish(chosen);
 
-      // 记录开启行为并标记星链为已开启
+      // ✅ 新逻辑：标记星链为已开启，并记录开启者
       try {
         console.log('📝 记录盲盒开启并标记星链为已开启...');
         
-        // 使用事务来确保数据一致性
+        // 使用用户ID作为开启者标识，确保盲盒归属于登录用户
         const { error: updateChainError } = await supabase
           .from('star_chains')
           .update({
             is_opened: true,
             opened_at: new Date().toISOString(),
-            opener_fingerprint: userFingerprint,
+            opener_fingerprint: user.id, // 使用用户ID而不是指纹
             total_opens: starChain.total_opens + 1
           })
           .eq('id', starChain.id)
@@ -164,9 +171,9 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           .insert({
             chain_id: starChain.id,
             wish_id: chosen.id,
-            opener_fingerprint: userFingerprint,
+            opener_fingerprint: user.id, // 使用用户ID
             user_agent: navigator.userAgent,
-            ip_hash: 'hashed_ip' // 在生产环境中应该使用真实的IP哈希
+            ip_hash: 'hashed_ip'
           });
 
         if (openError) {
@@ -175,11 +182,11 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           console.log('✅ 开启记录成功');
         }
 
-        // 记录到用户的收到星愿列表（使用指纹识别）
+        // ✅ 新逻辑：记录到用户的收到星愿列表（使用用户ID）
         const { error: userWishError } = await supabase
           .from('user_opened_wishes')
           .insert({
-            user_fingerprint: userFingerprint,
+            user_fingerprint: user.id, // 使用用户ID而不是指纹
             wish_id: chosen.id,
             chain_id: starChain.id,
             creator_name: starChain.creator?.name || 'Anonymous'
@@ -206,56 +213,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     }
   };
 
-  // 处理注册后的数据迁移
-  const handlePostRegistration = async () => {
-    if (!user || !selectedWish) return;
-
-    try {
-      console.log('🔄 开始迁移匿名用户数据到注册用户...');
-      
-      // 检查是否已经存在该用户的记录
-      const { data: existingRecord } = await supabase
-        .from('user_opened_wishes')
-        .select('id')
-        .eq('wish_id', selectedWish.id)
-        .eq('chain_id', starChain.id)
-        .eq('user_fingerprint', userFingerprint)
-        .single();
-
-      if (existingRecord) {
-        console.log('✅ 数据已存在，无需迁移');
-        return;
-      }
-
-      // 创建新的记录关联到注册用户
-      const { error } = await supabase
-        .from('user_opened_wishes')
-        .insert({
-          user_fingerprint: userFingerprint,
-          wish_id: selectedWish.id,
-          chain_id: starChain.id,
-          creator_name: starChain.creator?.name || 'Anonymous'
-        });
-
-      if (error) {
-        console.error('❌ 数据迁移失败:', error);
-      } else {
-        console.log('✅ 数据迁移成功');
-      }
-
-    } catch (error) {
-      console.error('❌ 数据迁移异常:', error);
-    }
-  };
-
-  // 监听用户登录状态变化
+  // 监听用户登录状态变化，登录后自动关闭登录弹窗
   useEffect(() => {
-    if (user && hasOpened && selectedWish) {
-      handlePostRegistration();
+    if (user && showAuthModal) {
+      setShowAuthModal(false);
     }
-  }, [user, hasOpened, selectedWish]);
+  }, [user, showAuthModal]);
 
-  if (loading) {
+  if (!initialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
@@ -435,26 +400,16 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             </p>
           </div>
 
-          {/* Registration prompt for anonymous users */}
-          {!user && (
-            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl p-6 mb-6 border border-blue-400/30">
-              <div className="mb-4">
-                <UserPlus className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-                <h3 className="text-lg font-bold mb-2 text-white">保存你的星愿收藏</h3>
-                <p className="text-blue-200 text-sm mb-4">
-                  注册账户后，这个美好的星愿将永久保存在你的收藏中，你还可以查看更多收到的星愿！
-                </p>
-              </div>
-              
-              <button
-                onClick={() => setShowAuthModal(true)}
-                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation font-medium flex items-center justify-center space-x-2"
-              >
-                <LogIn className="w-4 h-4" />
-                <span>注册保存星愿</span>
-              </button>
+          {/* Success message for logged in users */}
+          <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl p-6 mb-6 border border-green-400/30">
+            <div className="mb-4">
+              <UserPlus className="w-8 h-8 text-green-400 mx-auto mb-3" />
+              <h3 className="text-lg font-bold mb-2 text-white">星愿已保存到你的收藏</h3>
+              <p className="text-green-200 text-sm">
+                这个美好的星愿已经永久保存在你的账户中，你可以在"收到的星愿"页面查看所有收藏！
+              </p>
             </div>
-          )}
+          </div>
 
           {/* Action button */}
           <button
@@ -464,19 +419,125 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             {t('blindbox.doneButton')}
           </button>
         </div>
+      </div>
+    );
+  }
+
+  // ✅ 新逻辑：未登录用户看到的登录提示界面
+  if (!user) {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <div className="max-w-lg mx-auto text-center w-full">
+          {/* Header */}
+          <div className="mb-8 sm:mb-12">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent">
+              ✨ {t('blindbox.title')} ✨
+            </h1>
+            <p className="text-gray-400 text-sm sm:text-base">
+              {t('blindbox.prepared')} {starChain.wishes?.length || 0} {t('blindbox.mysterousWishes')}
+            </p>
+          </div>
+
+          {/* Blind box preview */}
+          <div className="relative mb-8 sm:mb-12">
+            {/* Floating particles around the box */}
+            <div className="absolute inset-0 scale-150">
+              {[...Array(30)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute animate-float"
+                  style={{
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    animationDelay: `${Math.random() * 5}s`,
+                    animationDuration: `${3 + Math.random() * 4}s`,
+                  }}
+                >
+                  <Sparkles className="w-2 h-2 sm:w-3 sm:h-3 text-yellow-300 opacity-70" />
+                </div>
+              ))}
+            </div>
+
+            {/* The box itself */}
+            <div className="relative w-72 h-72 sm:w-80 sm:h-80 mx-auto">
+              <div className="w-full h-full bg-gradient-to-br from-purple-400/20 via-pink-400/20 to-yellow-400/20 rounded-3xl border-2 border-white/30 backdrop-blur-sm flex items-center justify-center relative overflow-hidden">
+                {/* Inner glow */}
+                <div className="absolute inset-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-2xl border border-white/20"></div>
+                
+                {/* Central star */}
+                <div className="relative z-10">
+                  <Star className="w-20 h-20 sm:w-24 sm:h-24 text-yellow-300 animate-pulse" fill="currentColor" />
+                </div>
+
+                {/* Magical shimmer effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 animate-shimmer"></div>
+              </div>
+
+              {/* Floating rings */}
+              {[1, 2, 3].map(ring => (
+                <div
+                  key={ring}
+                  className="absolute inset-0 rounded-full border border-white/20 animate-ping"
+                  style={{
+                    animationDelay: `${ring}s`,
+                    animationDuration: '3s',
+                    transform: `scale(${1 + ring * 0.1})`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Login requirement message */}
+          <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl p-6 mb-8 border border-blue-400/30">
+            <div className="mb-4">
+              <LogIn className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+              <h3 className="text-lg font-bold mb-2 text-white">需要登录才能开启星愿盲盒</h3>
+              <p className="text-blue-200 text-sm mb-4">
+                为了确保这个珍贵的星愿能够安全地保存到你的收藏中，请先登录或注册账户。
+              </p>
+              <p className="text-blue-300 text-xs">
+                💫 登录后，这个盲盒将永远属于你，其他人无法再次开启
+              </p>
+            </div>
+            
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation font-medium flex items-center justify-center space-x-2"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>登录开启星愿盲盒</span>
+            </button>
+          </div>
+
+          {/* One-time use warning */}
+          <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20 mb-6">
+            <p className="text-sm text-red-300">
+              ⚠️ 每个星愿盲盒只能开启一次，开启后链接将失效
+            </p>
+          </div>
+
+          {/* Back button */}
+          <button
+            onClick={onBack}
+            className="w-full bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
+          >
+            返回首页
+          </button>
+        </div>
 
         {/* Auth Modal */}
         <AuthModal
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
-          mode="signup"
+          mode="signin"
           onModeChange={() => {}}
         />
       </div>
     );
   }
 
-  // Initial blind box view
+  // Initial blind box view for logged in users
   return (
     <div className="min-h-screen p-4 flex items-center justify-center">
       <div className="max-w-lg mx-auto text-center w-full">
@@ -552,6 +613,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20">
             <p className="text-sm text-red-300">
               ⚠️ 每个星愿盲盒只能开启一次，开启后链接将失效
+            </p>
+          </div>
+
+          {/* User info */}
+          <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-400/20">
+            <p className="text-sm text-green-300">
+              ✅ 已登录：{user.user_metadata?.full_name || user.email?.split('@')[0]}
             </p>
           </div>
         </div>

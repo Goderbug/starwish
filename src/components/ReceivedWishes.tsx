@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Star, Calendar, User, Gift, Clock, Sparkles } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { supabase, UserOpenedWish, generateUserFingerprint } from '../lib/supabase';
+import { supabase, UserOpenedWish } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 const ReceivedWishes: React.FC = () => {
   const { t } = useLanguage();
+  const { user } = useAuth(); // 使用用户ID而不是指纹
   const [openedWishes, setOpenedWishes] = useState<UserOpenedWish[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userFingerprint] = useState(() => generateUserFingerprint());
 
   useEffect(() => {
-    fetchOpenedWishes();
-  }, []);
+    if (user) {
+      fetchOpenedWishes();
+    }
+  }, [user]);
 
   const fetchOpenedWishes = async () => {
+    if (!user) return;
+
     try {
+      // ✅ 修改：使用用户ID查询收到的星愿
       const { data, error } = await supabase
         .from('user_opened_wishes')
         .select(`
@@ -22,7 +28,7 @@ const ReceivedWishes: React.FC = () => {
           wish:wishes(*),
           star_chain:star_chains(*)
         `)
-        .eq('user_fingerprint', userFingerprint)
+        .eq('user_fingerprint', user.id) // 使用用户ID而不是指纹
         .order('opened_at', { ascending: false });
 
       if (error) throw error;
@@ -95,6 +101,21 @@ const ReceivedWishes: React.FC = () => {
       minute: '2-digit'
     });
   };
+
+  // ✅ 新增：未登录状态处理
+  if (!user) {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-28 h-28 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-14 h-14 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2 text-gray-300">请先登录</h3>
+          <p className="text-gray-400 mb-6">登录后即可查看你收到的所有星愿</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
