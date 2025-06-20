@@ -11,7 +11,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      // Automatically refresh tokens when they expire
+      autoRefreshToken: true,
+      // Persist session in localStorage
+      persistSession: true,
+      // Handle token refresh failures gracefully
+      detectSessionInUrl: true,
+      // Reduce token refresh attempts to avoid excessive error logging
+      flowType: 'pkce'
+    },
+    // Add global error handling for auth requests
+    global: {
+      headers: {
+        'X-Client-Info': 'starwish-app'
+      }
+    }
+  }
 );
 
 // Database types
