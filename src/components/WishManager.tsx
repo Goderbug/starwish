@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Star, Trash2, Share2, Copy, Plus, Check, List, Sparkles, Calendar, Tag, Filter, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Star, Trash2, Share2, Copy, Plus, Check, List, Calendar, Tag, Filter, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateShareCode, Wish } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user, loading: authLoading, initialized } = useAuth();
+  const { user, initialized } = useAuth();
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,60 +68,10 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // 🔧 使用 useMemo 缓存按钮状态，避免重复计算导致的状态闪烁
-  const weaveButtonState = useMemo(() => {
-    // 1. 正在生成链接时
-    if (isGeneratingLink) {
-      return {
-        disabled: true,
-        text: '编织中...',
-        reason: 'generating'
-      };
-    }
-
-    // 2. 认证系统未初始化时（等待状态）
-    if (!initialized) {
-      return {
-        disabled: true,
-        text: '初始化中...',
-        reason: 'initializing'
-      };
-    }
-
-    // 3. 认证系统已初始化，但用户为空（确认未登录）
-    if (initialized && !user) {
-      return {
-        disabled: true,
-        text: '请先登录',
-        reason: 'not_authenticated'
-      };
-    }
-
-    // 4. 用户已登录，但没有选择星愿
-    if (user && selectedWishes.length === 0) {
-      return {
-        disabled: true,
-        text: '请选择星愿',
-        reason: 'no_selection'
-      };
-    }
-
-    // 5. 一切正常，可以编织星链
-    if (user && selectedWishes.length > 0) {
-      return {
-        disabled: false,
-        text: t('manager.weaveChain'),
-        reason: 'ready'
-      };
-    }
-
-    // 6. 兜底情况（不应该到达这里）
-    return {
-      disabled: true,
-      text: '状态异常',
-      reason: 'unknown'
-    };
-  }, [isGeneratingLink, initialized, user, selectedWishes.length, t]);
+  // 🔧 核心修复：使用 useMemo 缓存按钮状态，确保状态稳定
+  const canWeaveChain = useMemo(() => {
+    return initialized && user && selectedWishes.length > 0 && !isGeneratingLink;
+  }, [initialized, user, selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -200,7 +150,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   // 检查是否有活跃的筛选条件
   const hasActiveFilters = filterCategory !== 'all' || filterPriority !== 'all' || searchQuery.trim() !== '' || sortBy !== 'newest';
 
-  // 🔧 使用 useCallback 缓存事件处理函数，避免不必要的重新渲染
+  // 🔧 使用 useCallback 缓存事件处理函数
   const toggleWishSelection = useCallback((wishId: string) => {
     setSelectedWishes(prev => 
       prev.includes(wishId) 
@@ -235,7 +185,7 @@ const WishManager: React.FC<WishManagerProps> = ({
       setShowDeleteModal(false);
       setWishToDelete(null);
     } catch (error) {
-      console.error('❌ 删除星愿失败:', error);
+      console.error('删除星愿失败:', error);
     } finally {
       setIsDeleting(false);
     }
@@ -247,17 +197,9 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // 🔧 使用 useCallback 缓存生成链接函数，避免重复创建
+  // 🔧 核心修复：简化生成链接函数，移除复杂的状态判断
   const generateShareLink = useCallback(async () => {
-    if (selectedWishes.length === 0) {
-      setError('请先选择要分享的星愿');
-      return;
-    }
-    
-    if (!user || !initialized) {
-      setError('请先登录后再创建星链');
-      return;
-    }
+    if (!canWeaveChain) return;
     
     setIsGeneratingLink(true);
     setError(null);
@@ -305,10 +247,9 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // 创建星链 - 使用事务确保数据一致性
+      // 创建星链
       const shareCode = generateShareCode();
       
-      // 开始数据库事务
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
@@ -326,7 +267,7 @@ const WishManager: React.FC<WishManagerProps> = ({
         throw new Error(`创建星链失败: ${chainError.message || '未知错误'}`);
       }
 
-      // 添加星愿到星链 - 批量插入
+      // 添加星愿到星链
       const chainWishes = selectedWishes.map(wishId => ({
         chain_id: starChain.id,
         wish_id: wishId,
@@ -337,7 +278,6 @@ const WishManager: React.FC<WishManagerProps> = ({
         .insert(chainWishes);
 
       if (wishError2) {
-        // 如果添加星愿失败，删除已创建的星链以保持数据一致性
         await supabase
           .from('star_chains')
           .delete()
@@ -345,38 +285,16 @@ const WishManager: React.FC<WishManagerProps> = ({
         throw new Error(`添加星愿失败: ${wishError2.message || '未知错误'}`);
       }
 
-      // 验证星链创建是否成功
-      const { data: verifyChain, error: verifyError } = await supabase
-        .from('star_chains')
-        .select(`
-          *,
-          star_chain_wishes(
-            wish:wishes(id, title)
-          )
-        `)
-        .eq('id', starChain.id)
-        .single();
-
-      if (verifyError || !verifyChain) {
-        throw new Error('星链创建验证失败');
-      }
-
-      const wishCount = verifyChain.star_chain_wishes?.length || 0;
-
-      if (wishCount !== selectedWishes.length) {
-        throw new Error('星愿数量验证失败，请重试');
-      }
-
       const link = `${window.location.origin}?box=${shareCode}`;
       setGeneratedLink(link);
-      setIsGeneratingLink(false);
       setShowShareModal(true);
       
     } catch (error: any) {
       setError(error.message || '编织星链失败，请重试');
+    } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, user, initialized]);
+  }, [canWeaveChain, user, selectedWishes]);
 
   const copyLink = async () => {
     try {
@@ -385,7 +303,6 @@ const WishManager: React.FC<WishManagerProps> = ({
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy link:', err);
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = generatedLink;
       document.body.appendChild(textArea);
@@ -409,7 +326,6 @@ const WishManager: React.FC<WishManagerProps> = ({
   if (isGeneratingLink) {
     return (
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
-        {/* Animated star particles */}
         <div className="absolute inset-0">
           {[...Array(80)].map((_, i) => (
             <div
@@ -426,14 +342,12 @@ const WishManager: React.FC<WishManagerProps> = ({
         </div>
 
         <div className="text-center relative z-10">
-          {/* Central weaving animation */}
           <div className="relative mb-8">
             <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 flex items-center justify-center animate-spin relative overflow-hidden">
               <div className="absolute inset-2 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 rounded-full animate-pulse"></div>
               <Star className="w-16 h-16 sm:w-20 sm:h-20 text-white animate-pulse relative z-10" fill="currentColor" />
             </div>
             
-            {/* Expanding energy rings */}
             {[1, 2, 3, 4].map(ring => (
               <div
                 key={ring}
@@ -457,7 +371,6 @@ const WishManager: React.FC<WishManagerProps> = ({
             {t('manager.contains')} {selectedWishes.length} {t('manager.subtitle')}
           </p>
           
-          {/* Progress dots */}
           <div className="mt-8 flex justify-center space-x-2">
             {[...Array(5)].map((_, i) => (
               <div
@@ -475,7 +388,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   return (
     <div className="min-h-screen p-4 pb-32">
       <div className="max-w-4xl mx-auto">
-        {/* Page Title - 移到这里并居中 */}
+        {/* Page Title */}
         <div className="text-center mb-8 sm:mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
@@ -503,7 +416,7 @@ const WishManager: React.FC<WishManagerProps> = ({
           </div>
         )}
 
-        {/* 搜索和筛选工具栏 - 去掉边框，合并新星愿按钮 */}
+        {/* 搜索和筛选工具栏 */}
         <div className="mb-8">
           <div className="flex items-center space-x-3">
             {/* 搜索框 */}
@@ -547,7 +460,7 @@ const WishManager: React.FC<WishManagerProps> = ({
               )}
             </button>
 
-            {/* 新星愿按钮 - 移到筛选右侧 */}
+            {/* 新星愿按钮 */}
             <button
               onClick={() => onNavigate('create')}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 sm:px-6 py-3 rounded-xl flex items-center space-x-2 transition-all text-sm sm:text-base touch-manipulation"
@@ -801,7 +714,6 @@ const WishManager: React.FC<WishManagerProps> = ({
         {showDeleteModal && wishToDelete && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-900/95 backdrop-blur-sm rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/20 relative overflow-hidden">
-              {/* Background sparkles */}
               <div className="absolute inset-0">
                 {[...Array(20)].map((_, i) => (
                   <div
@@ -817,7 +729,6 @@ const WishManager: React.FC<WishManagerProps> = ({
               </div>
 
               <div className="relative z-10">
-                {/* Header */}
                 <div className="text-center mb-6">
                   <div className="w-16 h-16 bg-gradient-to-r from-red-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Trash2 className="w-8 h-8 text-white" />
@@ -830,7 +741,6 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </p>
                 </div>
                 
-                {/* Wish preview */}
                 <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
                   <div className="flex items-center space-x-3 mb-2">
                     <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${categoryColors[wishToDelete.category]} flex items-center justify-center`}>
@@ -845,14 +755,12 @@ const WishManager: React.FC<WishManagerProps> = ({
                   )}
                 </div>
 
-                {/* Warning */}
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
                   <p className="text-red-400 text-sm text-center">
                     ⚠️ 删除后，这个星愿将从所有已分享的星链中移除
                   </p>
                 </div>
 
-                {/* Action buttons */}
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                   <button
                     onClick={cancelDelete}
@@ -888,7 +796,6 @@ const WishManager: React.FC<WishManagerProps> = ({
         {showShareModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-gray-900/90 backdrop-blur-sm rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/20 relative overflow-hidden max-h-[90vh] overflow-y-auto">
-              {/* Background sparkles */}
               <div className="absolute inset-0">
                 {[...Array(30)].map((_, i) => (
                   <div
@@ -904,7 +811,6 @@ const WishManager: React.FC<WishManagerProps> = ({
               </div>
 
               <div className="relative z-10">
-                {/* Header */}
                 <div className="text-center mb-6">
                   <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Share2 className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
@@ -917,7 +823,6 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </p>
                 </div>
                 
-                {/* Link display */}
                 <div className="bg-black/30 rounded-xl p-4 mb-6 border border-white/10">
                   <p className="text-sm text-gray-400 mb-2">{t('manager.chainLabel')}:</p>
                   <div className="bg-white/5 rounded-lg p-3 border border-white/10">
@@ -927,7 +832,6 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </div>
                 </div>
 
-                {/* Info */}
                 <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-4 mb-6 border border-purple-400/20">
                   <div className="flex items-center space-x-2 mb-2">
                     <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
@@ -938,7 +842,6 @@ const WishManager: React.FC<WishManagerProps> = ({
                   </p>
                 </div>
 
-                {/* Action buttons */}
                 <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                   <button
                     onClick={copyLink}
@@ -973,7 +876,7 @@ const WishManager: React.FC<WishManagerProps> = ({
         )}
       </div>
 
-      {/* 底部悬浮的选择和创建星链组件 */}
+      {/* 🔧 核心修复：底部悬浮的选择和创建星链组件 - 使用稳定的状态 */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent backdrop-blur-sm">
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
@@ -1011,21 +914,23 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
-                      {/* 🔧 关键修复：使用稳定的按钮状态，避免悬停时状态变化 */}
+                      {/* 🔧 核心修复：使用简化的按钮状态逻辑 */}
                       <button
                         onClick={generateShareLink}
-                        disabled={weaveButtonState.disabled}
+                        disabled={!canWeaveChain}
                         className={`px-6 py-2 text-sm rounded-lg transition-all flex items-center space-x-2 shadow-lg touch-manipulation ${
-                          weaveButtonState.disabled
-                            ? 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
-                            : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                          canWeaveChain
+                            ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white'
+                            : 'bg-gray-500 text-gray-300 cursor-not-allowed opacity-50'
                         }`}
-                        // 🔧 添加 onMouseEnter 和 onMouseLeave 来防止状态变化
-                        onMouseEnter={(e) => e.preventDefault()}
-                        onMouseLeave={(e) => e.preventDefault()}
                       >
                         <Share2 className="w-4 h-4" />
-                        <span>{weaveButtonState.text}</span>
+                        <span>
+                          {!initialized ? '初始化中...' : 
+                           !user ? '请先登录' : 
+                           selectedWishes.length === 0 ? '请选择星愿' :
+                           t('manager.weaveChain')}
+                        </span>
                       </button>
                     </>
                   ) : (
