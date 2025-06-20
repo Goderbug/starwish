@@ -14,16 +14,15 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key',
   {
     auth: {
-      // Automatically refresh tokens when they expire
-      autoRefreshToken: true,
-      // Persist session in localStorage
-      persistSession: true,
-      // Handle token refresh failures gracefully
-      detectSessionInUrl: true,
-      // Reduce token refresh attempts to avoid excessive error logging
+      // ✅ 关键修改：禁用会话持久化
+      persistSession: false,
+      // ✅ 禁用自动刷新令牌
+      autoRefreshToken: false,
+      // ✅ 禁用URL中的会话检测
+      detectSessionInUrl: false,
+      // 使用PKCE流程
       flowType: 'pkce'
     },
-    // Add global error handling for auth requests
     global: {
       headers: {
         'X-Client-Info': 'starwish-app'

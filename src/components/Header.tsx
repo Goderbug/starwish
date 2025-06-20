@@ -25,6 +25,8 @@ const Header: React.FC<HeaderProps> = ({
     try {
       await signOut();
       console.log('✅ Header: 登出完成');
+      // ✅ 由于禁用了持久化，登出后会立即清除所有状态
+      // 用户将被重定向到首页，需要重新登录才能访问任何功能
     } catch (error) {
       console.error('❌ Header: 登出错误:', error);
     }

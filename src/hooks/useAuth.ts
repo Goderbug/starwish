@@ -10,33 +10,24 @@ export const useAuth = () => {
     let mounted = true;
     let authSubscription: any = null;
 
-    // 简化的初始化函数
+    // ✅ 超级简化的初始化 - 由于禁用了持久化，每次都是全新开始
     const initializeAuth = async () => {
       try {
-        console.log('🔍 初始化认证状态...');
+        console.log('🔍 检查当前会话状态...');
         
-        // 获取当前会话
+        // 由于禁用了持久化，这里通常不会有会话
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (mounted) {
           if (error) {
             console.error('❌ 获取会话失败:', error);
-            // 如果是刷新令牌错误，静默处理
-            if (error.message?.includes('refresh_token') || error.message?.includes('Invalid Refresh Token')) {
-              console.log('🧹 检测到无效令牌，清除状态');
-              try {
-                await supabase.auth.signOut();
-              } catch (signOutError) {
-                console.error('登出失败:', signOutError);
-              }
-            }
             setUser(null);
           } else {
             setUser(session?.user || null);
             if (session?.user) {
-              console.log('✅ 用户已登录:', session.user.email);
+              console.log('✅ 发现活跃会话:', session.user.email);
             } else {
-              console.log('ℹ️ 用户未登录');
+              console.log('ℹ️ 无活跃会话（符合预期）');
             }
           }
           setLoading(false);
@@ -50,20 +41,19 @@ export const useAuth = () => {
       }
     };
 
-    // 设置认证状态监听器
+    // ✅ 简化的认证状态监听器
     const setupAuthListener = () => {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         async (event, session) => {
           console.log('🔄 认证状态变化:', event, session?.user?.email || '无用户');
           
           if (mounted) {
-            // 立即更新用户状态
             setUser(session?.user || null);
             setLoading(false);
 
-            // 处理用户资料更新（后台异步）
+            // ✅ 简化用户资料更新逻辑
             if (event === 'SIGNED_IN' && session?.user) {
-              console.log('✅ 用户登录，更新资料...');
+              console.log('✅ 用户登录成功');
               // 异步更新用户资料，不阻塞UI
               supabase
                 .from('users')
@@ -82,9 +72,6 @@ export const useAuth = () => {
                   } else {
                     console.log('✅ 用户资料更新成功');
                   }
-                })
-                .catch((error) => {
-                  console.error('❌ 更新用户资料异常:', error);
                 });
             }
 
@@ -99,16 +86,15 @@ export const useAuth = () => {
       return subscription;
     };
 
-    // 设置超时保护
+    // ✅ 减少超时时间，因为不需要等待持久化会话恢复
     const timeoutId = setTimeout(() => {
       if (mounted && loading) {
-        console.warn('⚠️ 认证初始化超时，设置为未登录状态');
+        console.log('⚠️ 认证初始化超时，设置为未登录状态');
         setUser(null);
         setLoading(false);
       }
-    }, 2000); // 减少到2秒
+    }, 1000); // 减少到1秒
 
-    // 先设置监听器，再初始化
     setupAuthListener();
     initializeAuth();
 
@@ -121,6 +107,5 @@ export const useAuth = () => {
     };
   }, []);
 
-  // 简化返回值，去除 initialized
   return { user, loading };
 };
