@@ -225,8 +225,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
               />
             </div>
 
-            {/* 悬停时显示的星愿信息 */}
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-30">
+            {/* 悬停时显示的星愿信息 - 修改为从下方出现 */}
+            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-30">
               <div className="bg-black/90 backdrop-blur-sm text-white text-xs px-4 py-3 rounded-xl whitespace-nowrap border border-white/20 shadow-xl star-tooltip">
                 <div className="font-bold text-sm mb-1">{star.wish.title}</div>
                 <div className="text-gray-300 text-xs flex items-center space-x-2">
@@ -236,8 +236,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
                 <div className="text-purple-300 text-xs mt-1">点击查看详情</div>
               </div>
-              {/* 小箭头 */}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-6 border-transparent border-t-black/90"></div>
+              {/* 小箭头 - 修改为指向上方 */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-6 border-transparent border-b-black/90"></div>
             </div>
           </div>
         ))}
