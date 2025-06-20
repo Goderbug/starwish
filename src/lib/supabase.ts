@@ -14,12 +14,16 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key',
   {
     auth: {
-      // ✅ 关键修改：禁用会话持久化
+      // ✅ 关键修改：完全禁用会话持久化
       persistSession: false,
       // ✅ 禁用自动刷新令牌
       autoRefreshToken: false,
       // ✅ 禁用URL中的会话检测
       detectSessionInUrl: false,
+      // ✅ 禁用存储
+      storage: undefined,
+      // ✅ 禁用存储键
+      storageKey: undefined,
       // 使用PKCE流程
       flowType: 'pkce'
     },
@@ -160,6 +164,31 @@ export const signInWithGoogle = async () => {
 export const signOut = async () => {
   try {
     console.log('🔄 Starting sign out...');
+    
+    // ✅ 先清理本地存储
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('sb-')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      const sessionKeysToRemove = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key && key.startsWith('sb-')) {
+          sessionKeysToRemove.push(key);
+        }
+      }
+      sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+      
+      console.log('🧹 清理了本地存储数据');
+    } catch (cleanupError) {
+      console.warn('⚠️ 清理本地存储时出现警告:', cleanupError);
+    }
     
     const { error } = await supabase.auth.signOut();
     

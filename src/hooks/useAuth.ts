@@ -10,9 +10,41 @@ export const useAuth = () => {
     let mounted = true;
     let authSubscription: any = null;
 
-    // ✅ 超级简化的初始化 - 由于禁用了持久化，每次都是全新开始
+    // ✅ 关键修复：清理所有可能的旧会话数据
+    const clearOldSessionData = async () => {
+      try {
+        // 清理 localStorage 中的 Supabase 数据
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-')) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+
+        // 清理 sessionStorage 中的 Supabase 数据
+        const sessionKeysToRemove = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith('sb-')) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        sessionKeysToRemove.forEach(key => sessionStorage.removeItem(key));
+
+        console.log('🧹 清理了旧的会话数据');
+      } catch (error) {
+        console.warn('⚠️ 清理会话数据时出现警告:', error);
+      }
+    };
+
+    // ✅ 超级简化的初始化 - 先清理，再检查
     const initializeAuth = async () => {
       try {
+        // 首先清理可能存在的旧数据
+        await clearOldSessionData();
+        
         console.log('🔍 检查当前会话状态...');
         
         // 由于禁用了持久化，这里通常不会有会话
@@ -21,6 +53,11 @@ export const useAuth = () => {
         if (mounted) {
           if (error) {
             console.error('❌ 获取会话失败:', error);
+            // 如果是 refresh token 相关错误，强制登出清理状态
+            if (error.message?.includes('refresh_token') || error.message?.includes('Invalid Refresh Token')) {
+              console.log('🧹 检测到无效 refresh token，强制清理...');
+              await supabase.auth.signOut();
+            }
             setUser(null);
           } else {
             setUser(session?.user || null);
@@ -34,6 +71,18 @@ export const useAuth = () => {
         }
       } catch (error: any) {
         console.error('❌ 初始化认证异常:', error);
+        
+        // 如果是 refresh token 相关错误，强制清理
+        if (error.message?.includes('refresh_token') || error.message?.includes('Invalid Refresh Token')) {
+          console.log('🧹 检测到无效 refresh token 异常，强制清理...');
+          try {
+            await clearOldSessionData();
+            await supabase.auth.signOut();
+          } catch (cleanupError) {
+            console.warn('⚠️ 清理时出现警告:', cleanupError);
+          }
+        }
+        
         if (mounted) {
           setUser(null);
           setLoading(false);
@@ -77,6 +126,13 @@ export const useAuth = () => {
 
             if (event === 'SIGNED_OUT') {
               console.log('🚪 用户已登出');
+              // 登出时也清理一下数据
+              await clearOldSessionData();
+            }
+
+            // ✅ 处理 token 刷新错误
+            if (event === 'TOKEN_REFRESHED') {
+              console.log('🔄 Token 已刷新');
             }
           }
         }
@@ -93,7 +149,7 @@ export const useAuth = () => {
         setUser(null);
         setLoading(false);
       }
-    }, 1000); // 减少到1秒
+    }, 2000); // 增加到2秒，给清理操作更多时间
 
     setupAuthListener();
     initializeAuth();
