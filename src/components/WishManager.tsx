@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user, initialized } = useAuth();
+  const { user } = useAuth(); // 移除不必要的 initialized 检查
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,10 +68,11 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // 🔧 核心修复：使用 useMemo 缓存按钮状态，确保状态稳定
+  // ✅ 修复：简化按钮状态逻辑 - 只检查必要条件
   const canWeaveChain = useMemo(() => {
-    return initialized && user && selectedWishes.length > 0 && !isGeneratingLink;
-  }, [initialized, user, selectedWishes.length, isGeneratingLink]);
+    // 既然这个组件只有登录用户才能访问，就不需要检查登录状态
+    return selectedWishes.length > 0 && !isGeneratingLink;
+  }, [selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -150,7 +151,6 @@ const WishManager: React.FC<WishManagerProps> = ({
   // 检查是否有活跃的筛选条件
   const hasActiveFilters = filterCategory !== 'all' || filterPriority !== 'all' || searchQuery.trim() !== '' || sortBy !== 'newest';
 
-  // 🔧 使用 useCallback 缓存事件处理函数
   const toggleWishSelection = useCallback((wishId: string) => {
     setSelectedWishes(prev => 
       prev.includes(wishId) 
@@ -197,7 +197,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // 🔧 核心修复：简化生成链接函数，移除复杂的状态判断
+  // ✅ 修复：简化生成链接函数 - 移除用户验证逻辑
   const generateShareLink = useCallback(async () => {
     if (!canWeaveChain) return;
     
@@ -205,6 +205,11 @@ const WishManager: React.FC<WishManagerProps> = ({
     setError(null);
     
     try {
+      // 由于用户已经登录才能访问这个页面，直接使用 user
+      if (!user) {
+        throw new Error('用户状态异常，请刷新页面重试');
+      }
+
       // 验证用户是否存在于数据库中
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -876,7 +881,7 @@ const WishManager: React.FC<WishManagerProps> = ({
         )}
       </div>
 
-      {/* 🔧 核心修复：底部悬浮的选择和创建星链组件 - 使用稳定的状态 */}
+      {/* ✅ 修复：底部悬浮的选择和创建星链组件 - 使用最简化的状态逻辑 */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent backdrop-blur-sm">
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
@@ -914,7 +919,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
-                      {/* 🔧 核心修复：使用简化的按钮状态逻辑 */}
+                      {/* ✅ 修复：最简化的按钮逻辑 - 只检查必要条件 */}
                       <button
                         onClick={generateShareLink}
                         disabled={!canWeaveChain}
@@ -926,10 +931,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         <Share2 className="w-4 h-4" />
                         <span>
-                          {!initialized ? '初始化中...' : 
-                           !user ? '请先登录' : 
-                           selectedWishes.length === 0 ? '请选择星愿' :
-                           t('manager.weaveChain')}
+                          {selectedWishes.length === 0 ? '请选择星愿' : t('manager.weaveChain')}
                         </span>
                       </button>
                     </>
