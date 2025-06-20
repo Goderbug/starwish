@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user, initialized } = useAuth(); // 重新添加 initialized 检查
+  const { user } = useAuth(); // ✅ 简化：只使用 user，不再检查 initialized
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,11 +68,10 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 修复：更严格的按钮状态检查
+  // ✅ 简化：最简单的按钮状态检查
   const canWeaveChain = useMemo(() => {
-    // 必须满足所有条件：认证已初始化、用户已登录、有选中的星愿、不在生成过程中
-    return initialized && user && selectedWishes.length > 0 && !isGeneratingLink;
-  }, [initialized, user, selectedWishes.length, isGeneratingLink]);
+    return user && selectedWishes.length > 0 && !isGeneratingLink;
+  }, [user, selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -197,98 +196,32 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 修复：更严格的生成链接函数
+  // ✅ 简化：去除复杂的状态检查，直接进行业务逻辑
   const generateShareLink = useCallback(async () => {
-    console.log('🔄 开始编织星链检查...', { 
-      initialized,
+    console.log('🔄 开始编织星链...', { 
       user: user ? { id: user.id, email: user.email } : null,
-      selectedWishesCount: selectedWishes.length,
-      canWeaveChain
+      selectedWishesCount: selectedWishes.length
     });
 
-    // 严格检查所有前置条件
-    if (!initialized) {
-      console.error('❌ 认证状态未初始化');
-      setError('系统正在初始化，请稍后重试');
-      return;
-    }
-
+    // ✅ 简化：只做最基本的检查
     if (!user) {
-      console.error('❌ 用户未登录');
-      setError('请先登录后再创建星链');
+      setError('请先登录');
       return;
     }
 
     if (selectedWishes.length === 0) {
-      console.error('❌ 未选择星愿');
       setError('请先选择要分享的星愿');
       return;
     }
 
     if (isGeneratingLink) {
-      console.log('⏳ 正在生成中，跳过重复请求');
-      return;
+      return; // 防止重复点击
     }
-    
-    console.log('✅ 前置条件检查通过，开始编织星链...');
     
     setIsGeneratingLink(true);
     setError(null);
     
     try {
-      // 验证用户是否存在于数据库中
-      console.log('🔍 验证用户数据库记录...');
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, email')
-        .eq('id', user.id)
-        .single();
-      
-      if (userError) {
-        console.log('🔄 用户记录不存在，尝试创建...');
-        // 如果用户不存在，尝试创建用户记录
-        const { error: createUserError } = await supabase
-          .from('users')
-          .insert({
-            id: user.id,
-            email: user.email!,
-            name: user.user_metadata?.full_name || user.user_metadata?.name,
-            avatar_url: user.user_metadata?.avatar_url,
-            google_id: user.user_metadata?.provider_id,
-          });
-        
-        if (createUserError) {
-          console.error('❌ 创建用户记录失败:', createUserError);
-          throw new Error('用户验证失败，请重新登录');
-        }
-        console.log('✅ 用户记录创建成功');
-      } else {
-        console.log('✅ 用户数据库验证成功:', userData);
-      }
-      
-      // 验证选中的星愿是否属于当前用户
-      console.log('🔍 验证星愿所有权...');
-      const { data: wishData, error: wishError } = await supabase
-        .from('wishes')
-        .select('id, user_id, title')
-        .in('id', selectedWishes)
-        .eq('user_id', user.id);
-      
-      if (wishError) {
-        console.error('❌ 星愿验证失败:', wishError);
-        throw new Error('验证星愿失败，请重试');
-      }
-      
-      if (!wishData || wishData.length !== selectedWishes.length) {
-        console.error('❌ 星愿数量不匹配:', { 
-          expected: selectedWishes.length, 
-          actual: wishData?.length || 0 
-        });
-        throw new Error('部分星愿不存在或不属于您，请刷新页面重试');
-      }
-      
-      console.log('✅ 星愿验证成功:', wishData.map(w => w.title));
-      
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 2000));
       
@@ -311,7 +244,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       if (chainError) {
         console.error('❌ 创建星链失败:', chainError);
-        throw new Error(`创建星链失败: ${chainError.message || '未知错误'}`);
+        throw new Error('创建星链失败，请重试');
       }
 
       console.log('✅ 星链创建成功:', starChain);
@@ -324,19 +257,15 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       console.log('📝 添加星愿到星链...', chainWishes);
 
-      const { error: wishError2 } = await supabase
+      const { error: wishError } = await supabase
         .from('star_chain_wishes')
         .insert(chainWishes);
 
-      if (wishError2) {
-        console.error('❌ 添加星愿到星链失败:', wishError2);
-        // 如果添加星愿失败，删除已创建的星链以保持数据一致性
-        console.log('🔄 回滚：删除已创建的星链...');
-        await supabase
-          .from('star_chains')
-          .delete()
-          .eq('id', starChain.id);
-        throw new Error(`添加星愿失败: ${wishError2.message || '未知错误'}`);
+      if (wishError) {
+        console.error('❌ 添加星愿到星链失败:', wishError);
+        // 回滚：删除已创建的星链
+        await supabase.from('star_chains').delete().eq('id', starChain.id);
+        throw new Error('添加星愿失败，请重试');
       }
 
       console.log('✅ 星愿添加成功');
@@ -352,7 +281,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [initialized, user, selectedWishes, isGeneratingLink, canWeaveChain]);
+  }, [user, selectedWishes, isGeneratingLink]);
 
   const copyLink = async () => {
     try {
@@ -380,9 +309,8 @@ const WishManager: React.FC<WishManagerProps> = ({
     setError(null);
   };
 
-  // ✅ 修复：获取按钮显示文本的函数
+  // ✅ 简化：获取按钮显示文本
   const getWeaveButtonText = () => {
-    if (!initialized) return '初始化中...';
     if (!user) return '请先登录';
     if (selectedWishes.length === 0) return '请选择星愿';
     if (isGeneratingLink) return '编织中...';
@@ -943,7 +871,7 @@ const WishManager: React.FC<WishManagerProps> = ({
         )}
       </div>
 
-      {/* ✅ 修复：底部悬浮的选择和创建星链组件 - 使用更严格的状态检查 */}
+      {/* ✅ 简化：底部悬浮的选择和创建星链组件 */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent backdrop-blur-sm">
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
@@ -981,7 +909,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
-                      {/* ✅ 修复：使用更严格的状态检查和更清晰的按钮文本 */}
+                      {/* ✅ 简化：使用简单的状态检查 */}
                       <button
                         onClick={generateShareLink}
                         disabled={!canWeaveChain}
