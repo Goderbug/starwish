@@ -282,7 +282,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <div className="w-px h-6 bg-white/20"></div>
               <div className="text-xs sm:text-sm text-gray-300">
-                ✨ 夜空中闪烁着你的星愿
+                ✨ {t('landing.starryNight')}
               </div>
             </div>
           </div>
@@ -318,7 +318,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               className="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 min-h-[56px]"
             >
               <Plus className="w-5 h-5" />
-              <span>{wishCount === 0 ? '播种第一颗星愿' : t('landing.plantWish')}</span>
+              <span>{wishCount === 0 ? t('landing.plantFirst') : t('landing.plantWish')}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
