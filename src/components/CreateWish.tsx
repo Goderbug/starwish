@@ -33,6 +33,8 @@ const CreateWish: React.FC<CreateWishProps> = ({ onAddWish, onBack }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // ✅ 简化：只检查表单是否填写完整
     if (!formData.title.trim() || isSubmitting) return;
 
     setIsSubmitting(true);

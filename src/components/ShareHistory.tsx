@@ -8,12 +8,13 @@ type FilterType = 'all' | 'unopened' | 'opened';
 
 const ShareHistory: React.FC = () => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user } = useAuth(); // ✅ 简化：只获取user，不检查loading
   const [starChains, setStarChains] = useState<StarChain[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
 
+  // ✅ 简化：只在有用户时获取数据
   useEffect(() => {
     if (user) {
       fetchStarChains();
@@ -21,6 +22,7 @@ const ShareHistory: React.FC = () => {
   }, [user]);
 
   const fetchStarChains = async () => {
+    // ✅ 既然能到这个页面，用户肯定已经登录了
     if (!user) return;
 
     try {
@@ -139,6 +141,21 @@ const ShareHistory: React.FC = () => {
       };
     }
   };
+
+  // ✅ 简化：如果没有用户，直接显示需要登录（虽然理论上不会到达这里）
+  if (!user) {
+    return (
+      <div className="min-h-screen p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-28 h-28 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Share2 className="w-14 h-14 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2 text-gray-300">请先登录</h3>
+          <p className="text-gray-400 mb-6">登录后即可查看你的分享记录</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
