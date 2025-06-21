@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Star, Trash2, Share2, Copy, Plus, Check, List, Calendar, Tag, Filter, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Star, Trash2, Share2, Copy, Plus, Check, Calendar, Tag, Filter, X, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, generateShareCode, Wish } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -388,13 +388,8 @@ const WishManager: React.FC<WishManagerProps> = ({
   return (
     <div className="min-h-screen p-4 pb-32">
       <div className="max-w-4xl mx-auto">
-        {/* Page Title */}
+        {/* Page Title - 移除了圆形图标 */}
         <div className="text-center mb-8 sm:mb-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 mb-4 sm:mb-6 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-400 animate-pulse"></div>
-            <List className="w-8 h-8 sm:w-10 sm:h-10 text-white relative z-10" />
-          </div>
-          
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4">
             {t('manager.title')}
           </h1>
