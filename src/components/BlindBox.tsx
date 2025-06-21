@@ -20,6 +20,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const [componentLoading, setComponentLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [openingAttempted, setOpeningAttempted] = useState(false); // 防止重复开启
 
   useEffect(() => {
     if (boxId) {
@@ -31,7 +32,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     if (!boxId) return;
 
     try {
-      // 只在开发环境显示详细日志
       if (import.meta.env.DEV) {
         console.log('🔍 获取星链数据:', boxId);
       }
@@ -46,7 +46,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         .single();
 
       if (chainError) {
-        setError('星链不存在或已失效');
+        console.error('❌ 获取星链失败:', chainError);
+        
+        // 根据错误类型提供更准确的错误信息
+        if (chainError.code === 'PGRST116') {
+          setError('这个星愿盲盒不存在或已失效');
+        } else {
+          setError('获取星链失败，请重试');
+        }
         return;
       }
 
@@ -56,6 +63,21 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       }
 
       const now = new Date();
+      
+      // ✅ 严格检查：已开启超过2分钟的星链不允许访问
+      if (chainData.is_opened) {
+        const openedTime = new Date(chainData.opened_at);
+        const timeDiff = now.getTime() - openedTime.getTime();
+        const twoMinutes = 2 * 60 * 1000; // 2分钟
+
+        if (timeDiff > twoMinutes) {
+          setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
+          return;
+        } else {
+          // 如果在2分钟内，说明是刚开启的，允许查看结果
+          console.log('ℹ️ 星链刚开启不久，允许查看结果');
+        }
+      }
       
       // 检查是否过期
       if (chainData.expires_at && new Date(chainData.expires_at) < now) {
@@ -69,18 +91,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         return;
       }
 
-      // 简化开启状态检查：只有超过5分钟的才算真正失效
-      if (chainData.is_opened) {
-        const openedTime = new Date(chainData.opened_at);
-        const timeDiff = now.getTime() - openedTime.getTime();
-        const fiveMinutes = 5 * 60 * 1000;
-
-        if (timeDiff > fiveMinutes) {
-          setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
-          return;
-        }
-      }
-
       // 获取星链中的星愿
       const { data: wishesData, error: wishesError } = await supabase
         .from('star_chain_wishes')
@@ -90,6 +100,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         .eq('chain_id', chainData.id);
 
       if (wishesError) {
+        console.error('❌ 获取星愿失败:', wishesError);
         setError('获取星愿失败，请重试');
         return;
       }
@@ -106,6 +117,23 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         wishes: wishes
       });
 
+      // ✅ 如果星链已开启，直接显示结果
+      if (chainData.is_opened && chainData.opened_at) {
+        // 从数据库获取开启记录来确定选中的星愿
+        const { data: openRecord } = await supabase
+          .from('blind_box_opens')
+          .select('wish_id, wish:wishes(*)')
+          .eq('chain_id', chainData.id)
+          .order('opened_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (openRecord && openRecord.wish) {
+          setSelectedWish(openRecord.wish);
+          setHasOpened(true);
+        }
+      }
+
     } catch (error: any) {
       console.error('❌ 获取星链数据失败:', error);
       setError('获取星链失败，请重试');
@@ -121,6 +149,12 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   };
 
   const openBlindBox = async () => {
+    // ✅ 防止重复开启
+    if (openingAttempted || isOpening) {
+      console.log('⚠️ 开启操作已在进行中，忽略重复请求');
+      return;
+    }
+
     if (!user) {
       setShowAuthModal(true);
       return;
@@ -130,7 +164,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       setError('没有可用的星愿');
       return;
     }
+
+    // ✅ 严格检查：如果已经开启，不允许再次开启
+    if (starChain.is_opened) {
+      setError('这个星愿盲盒已经被开启过了');
+      return;
+    }
     
+    setOpeningAttempted(true); // 标记开启尝试
     setIsOpening(true);
     setError(null);
     
@@ -145,7 +186,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       setSelectedWish(chosen);
 
       try {
-        // 尝试更新星链状态（只有未开启的才能更新成功）
+        // ✅ 关键修复：使用更严格的乐观锁更新
         const { data: updateResult, error: updateChainError } = await supabase
           .from('star_chains')
           .update({
@@ -155,33 +196,29 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             total_opens: starChain.total_opens + 1
           })
           .eq('id', starChain.id)
-          .eq('is_opened', false)
+          .eq('is_opened', false) // 乐观锁：只有未开启的才能更新
+          .eq('is_active', true)  // 额外检查：必须是活跃状态
           .select();
 
-        // 如果更新失败，检查是否是因为已经被开启
+        // 如果更新失败，说明已经被其他人开启了
         if (updateChainError || !updateResult || updateResult.length === 0) {
-          // 重新获取星链状态
-          const { data: currentChain, error: checkError } = await supabase
+          // 重新检查星链状态
+          const { data: currentChain } = await supabase
             .from('star_chains')
             .select('is_opened, opened_at, opener_fingerprint')
             .eq('id', starChain.id)
             .single();
 
-          if (!checkError && currentChain?.is_opened) {
-            const openedTime = new Date(currentChain.opened_at);
-            const now = new Date();
-            const timeDiff = now.getTime() - openedTime.getTime();
-            const fiveMinutes = 5 * 60 * 1000;
-
-            if (timeDiff > fiveMinutes) {
-              throw new Error('这个盲盒已经被其他人开启了');
-            }
-          } else if (updateChainError) {
-            throw new Error('更新星链状态失败：' + updateChainError.message);
+          if (currentChain?.is_opened) {
+            throw new Error('这个盲盒已经被其他人开启了');
+          } else {
+            throw new Error('开启失败，请重试');
           }
         }
 
-        // 记录开启事件（静默处理错误）
+        console.log('✅ 星链状态更新成功');
+
+        // 记录开启事件
         await supabase
           .from('blind_box_opens')
           .insert({
@@ -192,7 +229,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             ip_hash: 'hashed_ip'
           });
 
-        // 保存到用户的收到星愿列表（静默处理错误）
+        // 保存到用户的收到星愿列表
         await supabase
           .from('user_opened_wishes')
           .insert({
@@ -217,6 +254,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         console.error('❌ 数据库操作失败:', recordError);
         setError('开启失败：' + recordError.message);
         setIsOpening(false);
+        setOpeningAttempted(false); // 重置开启尝试标记
         return;
       }
 
@@ -225,6 +263,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     } catch (error: any) {
       console.error('❌ 打开盲盒失败:', error);
       setError('打开盲盒失败：' + error.message);
+      setOpeningAttempted(false); // 重置开启尝试标记
     } finally {
       setIsOpening(false);
     }
@@ -641,12 +680,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         {/* Open button */}
         <button
           onClick={openBlindBox}
-          disabled={!starChain.wishes || starChain.wishes.length === 0}
+          disabled={!starChain.wishes || starChain.wishes.length === 0 || starChain.is_opened || openingAttempted}
           className="group w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 sm:px-12 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 mx-auto relative overflow-hidden touch-manipulation min-h-[64px]"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 animate-shimmer"></div>
           <Star className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-spin relative z-10" fill="currentColor" />
-          <span className="relative z-10">开启盲盒</span>
+          <span className="relative z-10">
+            {starChain.is_opened ? '已开启' : openingAttempted ? '开启中...' : '开启盲盒'}
+          </span>
           <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-pulse relative z-10" />
         </button>
       </div>

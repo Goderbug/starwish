@@ -26,14 +26,14 @@ const ShareHistory: React.FC = () => {
     }
   }, [user]);
 
-  // ✅ 新增：实时监听星链状态变化
+  // ✅ 修复：实时监听星链状态变化
   const setupRealtimeSubscription = () => {
     if (!user) return () => {};
 
     console.log('🔄 设置实时监听星链状态变化...');
 
     const subscription = supabase
-      .channel('star_chains_changes')
+      .channel(`star_chains_${user.id}`)
       .on(
         'postgres_changes',
         {
@@ -45,22 +45,44 @@ const ShareHistory: React.FC = () => {
         (payload) => {
           console.log('🎉 检测到星链状态实时变化:', payload.new);
           
-          // 更新本地状态中对应的星链
-          setStarChains(prev => prev.map(chain => 
-            chain.id === payload.new.id 
-              ? { ...chain, ...payload.new }
-              : chain
-          ));
-
-          // 如果是开启状态变化，显示通知
-          if (payload.new.is_opened && !payload.old.is_opened) {
-            console.log('🎊 星链已被开启:', payload.new.share_code);
-            // 可以在这里添加通知逻辑
-          }
+          // ✅ 修复：更新本地状态中对应的星链，添加动画效果
+          setStarChains(prev => prev.map(chain => {
+            if (chain.id === payload.new.id) {
+              const updated = { ...chain, ...payload.new };
+              
+              // 如果是开启状态变化，触发视觉反馈
+              if (payload.new.is_opened && !payload.old?.is_opened) {
+                console.log('🎊 星链已被开启:', payload.new.share_code);
+                
+                // 可以在这里添加通知或者特殊样式
+                setTimeout(() => {
+                  // 延迟更新以显示动画效果
+                  setStarChains(current => current.map(c => 
+                    c.id === payload.new.id 
+                      ? { ...c, ...payload.new, _justOpened: true }
+                      : c
+                  ));
+                  
+                  // 3秒后移除特殊标记
+                  setTimeout(() => {
+                    setStarChains(current => current.map(c => {
+                      const { _justOpened, ...rest } = c;
+                      return rest;
+                    }));
+                  }, 3000);
+                }, 100);
+              }
+              
+              return updated;
+            }
+            return chain;
+          }));
         }
       )
       .subscribe((status) => {
-        console.log('📡 实时订阅状态:', status);
+        if (import.meta.env.DEV) {
+          console.log('📡 实时订阅状态:', status);
+        }
       });
 
     return () => {
@@ -241,14 +263,14 @@ const ShareHistory: React.FC = () => {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('shareHistory.title')}</h1>
               <p className="text-gray-300">{t('shareHistory.subtitle')}</p>
-              {/* ✅ 新增：实时状态提示 */}
+              {/* ✅ 实时状态提示 */}
               <div className="flex items-center space-x-2 mt-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-xs text-green-400">实时监听状态变化</span>
               </div>
             </div>
             
-            {/* ✅ 新增：刷新按钮 */}
+            {/* ✅ 刷新按钮和筛选标签 */}
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleRefresh}
@@ -377,15 +399,15 @@ const ShareHistory: React.FC = () => {
                   key={chain.id}
                   className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border transition-all duration-500 ${
                     chain.is_opened 
-                      ? 'border-green-500/30 bg-green-500/5' 
+                      ? 'border-green-500/30 bg-green-500/5 animate-status-change' 
                       : 'border-white/10 hover:bg-white/10'
-                  }`}
+                  } ${(chain as any)._justOpened ? 'ring-2 ring-green-400 ring-opacity-50' : ''}`}
                 >
                   {/* Chain header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${
                           chain.is_opened 
                             ? 'bg-gradient-to-r from-green-400 to-emerald-400' 
                             : 'bg-gradient-to-r from-purple-400 to-pink-400'
@@ -415,7 +437,7 @@ const ShareHistory: React.FC = () => {
                         )}
                       </div>
                       
-                      {/* ✅ 新增：单个星链状态检查按钮 */}
+                      {/* ✅ 单个星链状态检查按钮 */}
                       <button
                         onClick={() => checkChainStatus(chain.id)}
                         className="p-1 text-gray-400 hover:text-white transition-colors"
