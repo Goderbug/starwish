@@ -68,17 +68,11 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 关键修复：超级简化的状态检查 - 移除所有用户状态检查
+  // ✅ 关键修复：完全移除用户状态检查，只检查基本条件
   const canWeaveChain = useMemo(() => {
     // 只检查最基本的条件：是否选中星愿和是否正在生成
     const hasSelectedWishes = selectedWishes.length > 0;
     const notGenerating = !isGeneratingLink;
-    
-    console.log('🔍 检查编织条件:', {
-      hasSelectedWishes,
-      notGenerating,
-      selectedCount: selectedWishes.length
-    });
     
     return hasSelectedWishes && notGenerating;
   }, [selectedWishes.length, isGeneratingLink]);
@@ -206,7 +200,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 关键修复：超级简化的按钮文本逻辑
+  // ✅ 关键修复：完全简化的按钮文本逻辑
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
     if (selectedWishes.length === 0) return '请选择星愿';
@@ -230,9 +224,6 @@ const WishManager: React.FC<WishManagerProps> = ({
       return;
     }
 
-    // ✅ 移除用户状态检查 - 既然能到这个页面，用户肯定已经登录
-    // 如果真的没有用户，让数据库操作自然失败并显示错误
-    
     setIsGeneratingLink(true);
     setError(null);
     
@@ -240,19 +231,21 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // ✅ 直接使用 user，如果为 null 会在数据库操作时失败
-      if (!user) {
-        throw new Error('用户状态异常，请刷新页面重试');
+      // ✅ 关键修复：获取当前用户ID，如果获取失败让数据库操作自然失败
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('请重新登录后再试');
       }
       
       // 创建星链
       const shareCode = generateShareCode();
-      console.log('📝 创建星链记录...', { shareCode, userId: user.id });
+      console.log('📝 创建星链记录...', { shareCode, userId: currentUser.id });
       
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
-          creator_id: user.id,
+          creator_id: currentUser.id,
           share_code: shareCode,
           is_active: true,
           name: `星链 ${new Date().toLocaleDateString()}`,
@@ -301,7 +294,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, isGeneratingLink, user]);
+  }, [selectedWishes, isGeneratingLink]);
 
   const copyLink = async () => {
     try {
@@ -921,7 +914,6 @@ const WishManager: React.FC<WishManagerProps> = ({
                       >
                         {t('manager.cancel')}
                       </button>
-                      {/* ✅ 使用修复后的状态检查 */}
                       <button
                         onClick={generateShareLink}
                         disabled={!canWeaveChain}
