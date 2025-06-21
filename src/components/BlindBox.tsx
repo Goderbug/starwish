@@ -152,23 +152,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       setError('没有可用的星愿');
       return;
     }
-
-    // ✅ 修复：检查是否已经被开启（但允许5分钟内的重复访问）
-    if (starChain.is_opened) {
-      const openedTime = new Date(starChain.opened_at);
-      const now = new Date();
-      const timeDiff = now.getTime() - openedTime.getTime();
-      const fiveMinutes = 5 * 60 * 1000;
-
-      if (timeDiff > fiveMinutes) {
-        console.error('❌ 星链已被开启超过5分钟');
-        setError('这个星愿盲盒已经被开启过了');
-        return;
-      } else {
-        console.log('ℹ️ 星链已开启但在允许时间内，可能是重复访问');
-        // 如果是5分钟内的访问，可能是页面刷新或网络问题，允许继续
-      }
-    }
     
     console.log('🎁 开始打开盲盒，可用星愿:', starChain.wishes.length);
     setIsOpening(true);
@@ -185,61 +168,72 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       console.log('🎯 随机选中星愿:', chosen.title, '索引:', randomIndex);
       setSelectedWish(chosen);
 
-      // ✅ 关键修复：使用更安全的数据库操作
+      // ✅ 关键修复：更安全的数据库操作，避免重复检查
       try {
-        console.log('📝 开始数据库事务操作...');
+        console.log('📝 开始数据库操作...');
         
-        // ✅ 修复：先检查当前状态，避免并发问题
-        const { data: currentChain, error: checkError } = await supabase
+        // ✅ 修复：直接尝试更新，让数据库的乐观锁来处理并发
+        const { data: updateResult, error: updateChainError } = await supabase
           .from('star_chains')
-          .select('is_opened, opened_at')
+          .update({
+            is_opened: true,
+            opened_at: new Date().toISOString(),
+            opener_fingerprint: user.id,
+            total_opens: starChain.total_opens + 1
+          })
           .eq('id', starChain.id)
-          .single();
+          .eq('is_opened', false) // 乐观锁：确保只有未开启的才能被标记
+          .select();
 
-        if (checkError) {
-          console.error('❌ 检查星链状态失败:', checkError);
-          throw new Error('检查星链状态失败');
-        }
+        if (updateChainError) {
+          console.error('❌ 更新星链状态失败:', updateChainError);
+          
+          // 如果是因为已经被开启导致的失败，检查是否在允许时间内
+          const { data: currentChain, error: checkError } = await supabase
+            .from('star_chains')
+            .select('is_opened, opened_at, opener_fingerprint')
+            .eq('id', starChain.id)
+            .single();
 
-        // 如果已经被开启超过5分钟，拒绝操作
-        if (currentChain.is_opened) {
-          const openedTime = new Date(currentChain.opened_at);
-          const now = new Date();
-          const timeDiff = now.getTime() - openedTime.getTime();
-          const fiveMinutes = 5 * 60 * 1000;
+          if (!checkError && currentChain?.is_opened) {
+            const openedTime = new Date(currentChain.opened_at);
+            const now = new Date();
+            const timeDiff = now.getTime() - openedTime.getTime();
+            const fiveMinutes = 5 * 60 * 1000;
 
-          if (timeDiff > fiveMinutes) {
-            console.error('❌ 星链已被其他人开启');
-            throw new Error('这个盲盒已经被其他人开启了');
+            if (timeDiff <= fiveMinutes) {
+              console.log('ℹ️ 星链已开启但在允许时间内，可能是重复操作或网络问题');
+              // 在允许时间内，继续执行后续操作
+            } else {
+              throw new Error('这个盲盒已经被其他人开启了');
+            }
           } else {
-            console.log('ℹ️ 星链已开启但在允许时间内，可能是重复操作');
-            // 在允许时间内，跳过数据库更新，直接显示结果
+            throw new Error('标记星链失败，请重试');
+          }
+        } else if (!updateResult || updateResult.length === 0) {
+          // 检查是否是因为已经被开启
+          const { data: currentChain, error: checkError } = await supabase
+            .from('star_chains')
+            .select('is_opened, opened_at, opener_fingerprint')
+            .eq('id', starChain.id)
+            .single();
+
+          if (!checkError && currentChain?.is_opened) {
+            const openedTime = new Date(currentChain.opened_at);
+            const now = new Date();
+            const timeDiff = now.getTime() - openedTime.getTime();
+            const fiveMinutes = 5 * 60 * 1000;
+
+            if (timeDiff <= fiveMinutes) {
+              console.log('ℹ️ 星链已开启但在允许时间内，可能是重复操作');
+              // 在允许时间内，继续执行后续操作
+            } else {
+              throw new Error('这个盲盒已经被其他人开启了');
+            }
+          } else {
+            throw new Error('这个盲盒已经被其他人开启了');
           }
         } else {
-          // 1. 尝试标记星链为已开启（使用乐观锁）
-          const { data: updateResult, error: updateChainError } = await supabase
-            .from('star_chains')
-            .update({
-              is_opened: true,
-              opened_at: new Date().toISOString(),
-              opener_fingerprint: user.id,
-              total_opens: starChain.total_opens + 1
-            })
-            .eq('id', starChain.id)
-            .eq('is_opened', false) // 乐观锁：确保只有未开启的才能被标记
-            .select();
-
-          if (updateChainError) {
-            console.error('❌ 更新星链状态失败:', updateChainError);
-            throw new Error('标记星链失败，可能已被他人开启');
-          }
-
-          // 检查是否真的更新了记录（防止并发问题）
-          if (!updateResult || updateResult.length === 0) {
-            console.error('❌ 星链可能已被他人开启');
-            throw new Error('这个盲盒已经被其他人开启了');
-          }
-
           console.log('✅ 星链状态更新成功');
         }
 
