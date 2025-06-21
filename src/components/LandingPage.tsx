@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Star, Heart, Sparkles, Gift, Plus, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
+import { Heart, Sparkles, Gift, Plus, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User } from '@supabase/supabase-js';
 import { Wish } from '../lib/supabase';
@@ -230,7 +230,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
       case 'gift': return Gift;
       case 'experience': return Heart;
       case 'moment': return Clock;
-      default: return Star;
+      default: return Gift;
     }
   };
 
@@ -331,8 +331,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         ))}
 
-        {/* 背景装饰星星（静态，更少更精致） */}
-        {[...Array(15)].map((_, i) => (
+        {/* 背景装饰星星（静态，更少更精致） - 减少数量，让画面更简洁 */}
+        {[...Array(8)].map((_, i) => (
           <div
             key={`bg-star-${i}`}
             className="absolute animate-pulse"
@@ -344,9 +344,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
             }}
           >
             <GlowingDot
-              size={2 + Math.random() * 3}
+              size={1 + Math.random() * 2}
               color="#ffffff"
-              brightness={0.3 + Math.random() * 0.4}
+              brightness={0.2 + Math.random() * 0.3}
             />
           </div>
         ))}
@@ -388,7 +388,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
             <div className="mb-4">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="w-8 h-8 text-white" fill="currentColor" />
+                <GlowingDot size={32} color="#ffffff" brightness={1} />
               </div>
               <h3 className="text-xl font-bold mb-2 text-white">{t('auth.signInRequired')}</h3>
               <p className="text-purple-200 text-sm sm:text-base mb-6">
@@ -481,14 +481,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Decorative elements - hidden on mobile for cleaner look */}
-      <div className="fixed bottom-10 left-10 opacity-20 hidden sm:block">
-        <Star className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-300 animate-spin" style={{ animationDuration: '8s' }} />
-      </div>
-      <div className="fixed top-20 right-20 opacity-20 hidden sm:block">
-        <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-pink-300 animate-bounce" />
       </div>
 
       {/* 星愿详情弹窗 */}
