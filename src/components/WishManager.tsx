@@ -68,14 +68,9 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 关键修复：完全移除用户状态检查，只检查基本条件
   const canWeaveChain = useMemo(() => {
-    // 只检查最基本的条件：是否选中星愿和是否正在生成
-    const hasSelectedWishes = selectedWishes.length > 0;
-    const notGenerating = !isGeneratingLink;
-    
-    return hasSelectedWishes && notGenerating;
-  }, [selectedWishes.length, isGeneratingLink]);
+    return selectedWishes.length > 0 && !isGeneratingLink && user;
+  }, [selectedWishes.length, isGeneratingLink, user]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -200,27 +195,31 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 关键修复：完全简化的按钮文本逻辑
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
     if (selectedWishes.length === 0) return '请选择星愿';
+    if (!user) return '请先登录';
     return t('manager.weaveChain');
   };
 
-  // ✅ 关键修复：完全移除用户状态检查的编织函数
+  // ✅ 全新的简单星链生成逻辑
   const generateShareLink = useCallback(async () => {
-    console.log('🔄 开始编织星链...', { 
-      selectedWishesCount: selectedWishes.length
+    console.log('🔄 开始创建星链...', { 
+      selectedWishesCount: selectedWishes.length,
+      userId: user?.id
     });
 
-    // ✅ 只检查最基本的条件
+    if (!user) {
+      setError('请先登录');
+      return;
+    }
+
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
     }
 
     if (isGeneratingLink) {
-      console.log('⚠️ 正在生成中，忽略重复请求');
       return;
     }
 
@@ -229,25 +228,19 @@ const WishManager: React.FC<WishManagerProps> = ({
     
     try {
       // 显示编织动画
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // ✅ 关键修复：获取当前用户ID，如果获取失败让数据库操作自然失败
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (!currentUser) {
-        throw new Error('请重新登录后再试');
-      }
-      
-      // 创建星链
+      // ✅ 简单直接：创建新的星链
       const shareCode = generateShareCode();
-      console.log('📝 创建星链记录...', { shareCode, userId: currentUser.id });
+      console.log('📝 创建星链...', { shareCode });
       
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
-          creator_id: currentUser.id,
+          creator_id: user.id,
           share_code: shareCode,
           is_active: true,
+          is_opened: false, // 明确设置为未开启
           name: `星链 ${new Date().toLocaleDateString()}`,
           description: `包含 ${selectedWishes.length} 个星愿的神秘星链`,
           total_opens: 0
@@ -287,14 +280,14 @@ const WishManager: React.FC<WishManagerProps> = ({
       setGeneratedLink(link);
       setShowShareModal(true);
       
-      console.log('🎉 星链编织完成:', link);
+      console.log('🎉 星链创建完成:', link);
     } catch (error: any) {
-      console.error('❌ 编织星链失败:', error);
-      setError(error.message || '编织星链失败，请重试');
+      console.error('❌ 创建星链失败:', error);
+      setError(error.message || '创建星链失败，请重试');
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, isGeneratingLink]);
+  }, [selectedWishes, isGeneratingLink, user]);
 
   const copyLink = async () => {
     try {
@@ -388,7 +381,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   return (
     <div className="min-h-screen p-4 pb-32">
       <div className="max-w-4xl mx-auto">
-        {/* Page Title - 移除了圆形图标 */}
+        {/* Page Title */}
         <div className="text-center mb-8 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4">
             {t('manager.title')}
