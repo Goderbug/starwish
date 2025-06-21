@@ -68,10 +68,10 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 简化：只检查是否选中星愿和是否正在生成
+  // ✅ 修复：检查用户是否已登录、是否选中星愿和是否正在生成
   const canWeaveChain = useMemo(() => {
-    return selectedWishes.length > 0 && !isGeneratingLink;
-  }, [selectedWishes.length, isGeneratingLink]);
+    return user && selectedWishes.length > 0 && !isGeneratingLink;
+  }, [user, selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -196,20 +196,28 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 简化按钮文本逻辑
+  // ✅ 修复：更新按钮文本逻辑，包含用户状态检查
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
+    if (!user) return '请先登录';
     if (selectedWishes.length === 0) return '请选择星愿';
     return t('manager.weaveChain');
   };
 
-  // ✅ 核心修复：完全移除用户状态检查，只检查星愿选择
+  // ✅ 修复：添加用户状态检查
   const generateShareLink = useCallback(async () => {
     console.log('🔄 开始创建星链...', { 
-      selectedWishesCount: selectedWishes.length
+      selectedWishesCount: selectedWishes.length,
+      user: user ? 'logged in' : 'not logged in'
     });
 
-    // ✅ 只检查星愿选择，不检查用户状态（因为能进入此页面就证明已登录）
+    // ✅ 检查用户登录状态
+    if (!user) {
+      setError('请先登录后再创建星链');
+      return;
+    }
+
+    // 检查星愿选择
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
@@ -226,14 +234,13 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // ✅ 直接使用user，因为能进入此页面就证明user存在
       const shareCode = generateShareCode();
       console.log('📝 创建星链...', { shareCode });
       
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
-          creator_id: user!.id, // 使用非空断言，因为能进入此页面就证明user存在
+          creator_id: user.id, // 现在安全使用user.id，因为已经检查过user不为null
           share_code: shareCode,
           is_active: true,
           is_opened: false,
