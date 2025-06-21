@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Star, Heart, Sparkles, Gift, Plus, List, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
+import { Star, Heart, Sparkles, Gift, Plus, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User } from '@supabase/supabase-js';
 import { Wish } from '../lib/supabase';
@@ -327,7 +327,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 onClick={() => onNavigate('manage')}
                 className="group w-full sm:w-auto bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center space-x-2 min-h-[56px]"
               >
-                <List className="w-5 h-5" />
+                <Wand2 className="w-5 h-5" />
                 <span>{t('landing.manageWishes')}</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
