@@ -19,7 +19,8 @@ const ShareHistory: React.FC = () => {
     if (user) {
       fetchStarChains();
       // ✅ 设置实时监听星链状态变化
-      setupRealtimeSubscription();
+      const cleanup = setupRealtimeSubscription();
+      return cleanup;
     } else {
       setLoading(false);
     }
@@ -27,7 +28,9 @@ const ShareHistory: React.FC = () => {
 
   // ✅ 新增：实时监听星链状态变化
   const setupRealtimeSubscription = () => {
-    if (!user) return;
+    if (!user) return () => {};
+
+    console.log('🔄 设置实时监听星链状态变化...');
 
     const subscription = supabase
       .channel('star_chains_changes')
@@ -40,7 +43,7 @@ const ShareHistory: React.FC = () => {
           filter: `creator_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('🔄 检测到星链状态变化:', payload);
+          console.log('🎉 检测到星链状态实时变化:', payload.new);
           
           // 更新本地状态中对应的星链
           setStarChains(prev => prev.map(chain => 
@@ -48,11 +51,20 @@ const ShareHistory: React.FC = () => {
               ? { ...chain, ...payload.new }
               : chain
           ));
+
+          // 如果是开启状态变化，显示通知
+          if (payload.new.is_opened && !payload.old.is_opened) {
+            console.log('🎊 星链已被开启:', payload.new.share_code);
+            // 可以在这里添加通知逻辑
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 实时订阅状态:', status);
+      });
 
     return () => {
+      console.log('🔌 取消实时监听');
       subscription.unsubscribe();
     };
   };
@@ -229,6 +241,11 @@ const ShareHistory: React.FC = () => {
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('shareHistory.title')}</h1>
               <p className="text-gray-300">{t('shareHistory.subtitle')}</p>
+              {/* ✅ 新增：实时状态提示 */}
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs text-green-400">实时监听状态变化</span>
+              </div>
             </div>
             
             {/* ✅ 新增：刷新按钮 */}
@@ -358,13 +375,21 @@ const ShareHistory: React.FC = () => {
               return (
                 <div
                   key={chain.id}
-                  className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all"
+                  className={`bg-white/5 backdrop-blur-sm rounded-2xl p-6 border transition-all duration-500 ${
+                    chain.is_opened 
+                      ? 'border-green-500/30 bg-green-500/5' 
+                      : 'border-white/10 hover:bg-white/10'
+                  }`}
                 >
                   {/* Chain header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          chain.is_opened 
+                            ? 'bg-gradient-to-r from-green-400 to-emerald-400' 
+                            : 'bg-gradient-to-r from-purple-400 to-pink-400'
+                        }`}>
                           <Share2 className="w-5 h-5 text-white" />
                         </div>
                         <div>
@@ -378,11 +403,16 @@ const ShareHistory: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* ✅ 改进：状态指示器增加实时更新提示 */}
+                    {/* ✅ 改进：状态指示器增加动画效果 */}
                     <div className="flex items-center space-x-2">
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${openStatus.bgColor} ${openStatus.color} border ${openStatus.borderColor}`}>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 transition-all duration-500 ${openStatus.bgColor} ${openStatus.color} border ${openStatus.borderColor} ${
+                        chain.is_opened ? 'animate-pulse' : ''
+                      }`}>
                         <StatusIcon className="w-3 h-3" />
                         <span>{openStatus.text}</span>
+                        {chain.is_opened && (
+                          <div className="w-1 h-1 bg-green-400 rounded-full animate-ping"></div>
+                        )}
                       </div>
                       
                       {/* ✅ 新增：单个星链状态检查按钮 */}
@@ -399,8 +429,10 @@ const ShareHistory: React.FC = () => {
                   {/* Chain stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
                     {/* 开启状态 */}
-                    <div className="bg-white/5 rounded-xl p-4 text-center">
-                      <div className={`text-2xl font-bold mb-1 ${openStatus.color}`}>
+                    <div className={`rounded-xl p-4 text-center transition-all duration-500 ${
+                      chain.is_opened ? 'bg-green-500/10' : 'bg-white/5'
+                    }`}>
+                      <div className={`text-2xl font-bold mb-1 transition-all duration-500 ${openStatus.color}`}>
                         {chain.is_opened ? '✓' : '○'}
                       </div>
                       <div className="text-xs text-gray-400">开启状态</div>
@@ -434,12 +466,17 @@ const ShareHistory: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 开启详情 */}
+                  {/* ✅ 改进：开启详情增加动画效果 */}
                   {chain.is_opened && chain.opened_at && (
-                    <div className="mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                    <div className="mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20 animate-fade-in">
                       <div className="flex items-center space-x-2 text-sm text-green-300">
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-4 h-4 animate-pulse" />
                         <span>已于 {formatDate(chain.opened_at)} 开启</span>
+                        <div className="flex space-x-1">
+                          <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                          <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                          <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
                       </div>
                     </div>
                   )}
