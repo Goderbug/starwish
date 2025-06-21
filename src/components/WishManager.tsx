@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,9 +68,11 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
+  // ✅ 修复：简化条件检查，移除用户状态依赖
   const canWeaveChain = useMemo(() => {
-    return selectedWishes.length > 0 && !isGeneratingLink && user;
-  }, [selectedWishes.length, isGeneratingLink, user]);
+    // 只检查基本条件：有选中的星愿且不在生成中
+    return selectedWishes.length > 0 && !isGeneratingLink;
+  }, [selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -195,22 +197,25 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
+  // ✅ 修复：简化按钮文本逻辑，移除用户状态检查
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
     if (selectedWishes.length === 0) return '请选择星愿';
-    if (!user) return '请先登录';
     return t('manager.weaveChain');
   };
 
-  // ✅ 全新的简单星链生成逻辑
+  // ✅ 修复：简化星链生成逻辑，在函数内部检查用户状态
   const generateShareLink = useCallback(async () => {
     console.log('🔄 开始创建星链...', { 
       selectedWishesCount: selectedWishes.length,
-      userId: user?.id
+      userExists: !!user,
+      loading
     });
 
+    // ✅ 在函数内部检查用户状态，而不是在外部依赖中
     if (!user) {
-      setError('请先登录');
+      console.log('❌ 用户未登录');
+      setError('请先登录后再创建星链');
       return;
     }
 
@@ -287,7 +292,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, isGeneratingLink, user]);
+  }, [selectedWishes, isGeneratingLink, user, loading]);
 
   const copyLink = async () => {
     try {
