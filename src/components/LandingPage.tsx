@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Star, Heart, Sparkles, Gift, Plus, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User } from '@supabase/supabase-js';
@@ -24,35 +24,55 @@ interface WishStar {
   wish: Wish;
 }
 
-// 6-pointed star SVG component
-const SixPointedStar: React.FC<{ 
+interface StarConnection {
+  from: WishStar;
+  to: WishStar;
+  distance: number;
+}
+
+// 发光圆点组件
+const GlowingDot: React.FC<{ 
   size: number; 
   color: string; 
   brightness: number; 
   className?: string;
 }> = ({ size, color, brightness, className = '' }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    className={className}
+  <div
+    className={`rounded-full relative ${className}`}
     style={{ 
-      filter: `drop-shadow(0 0 ${size * 0.3}px ${color}) drop-shadow(0 0 ${size * 0.6}px ${color}40)`,
-      opacity: brightness
+      width: size,
+      height: size,
+      backgroundColor: color,
+      opacity: brightness,
+      boxShadow: `
+        0 0 ${size * 0.5}px ${color},
+        0 0 ${size * 1}px ${color}40,
+        0 0 ${size * 1.5}px ${color}20
+      `,
     }}
   >
-    <path
-      d="M12 2L14.09 8.26L20 9L14.09 15.74L12 22L9.91 15.74L4 9L9.91 8.26L12 2Z"
-      fill={color}
-      stroke={color}
-      strokeWidth="0.5"
+    {/* 内部高亮 */}
+    <div
+      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full bg-white"
+      style={{
+        width: size * 0.3,
+        height: size * 0.3,
+        opacity: 0.8,
+      }}
     />
-    <path
-      d="M12 6L13.5 10.5L18 12L13.5 13.5L12 18L10.5 13.5L6 12L10.5 10.5L12 6Z"
-      fill="white"
-      opacity="0.8"
+    
+    {/* 外部光晕动画 */}
+    <div
+      className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full animate-ping"
+      style={{
+        width: size * 1.5,
+        height: size * 1.5,
+        backgroundColor: color,
+        opacity: 0.3,
+        animationDuration: '3s',
+      }}
     />
-  </svg>
+  </div>
 );
 
 const LandingPage: React.FC<LandingPageProps> = ({ 
@@ -122,6 +142,50 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return { x, y };
   };
 
+  // 计算两个星星之间的距离
+  const calculateDistance = (star1: WishStar, star2: WishStar) => {
+    const dx = star1.x - star2.x;
+    const dy = star1.y - star2.y;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // 生成星星连线
+  const generateConnections = (stars: WishStar[]): StarConnection[] => {
+    const connections: StarConnection[] = [];
+    const maxDistance = 25; // 最大连线距离（百分比）
+    const maxConnectionsPerStar = 3; // 每个星星最多连接数
+
+    stars.forEach((star, index) => {
+      const nearbyStars = stars
+        .filter((otherStar, otherIndex) => otherIndex !== index)
+        .map(otherStar => ({
+          star: otherStar,
+          distance: calculateDistance(star, otherStar)
+        }))
+        .filter(({ distance }) => distance <= maxDistance)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, maxConnectionsPerStar);
+
+      nearbyStars.forEach(({ star: otherStar, distance }) => {
+        // 避免重复连线
+        const existingConnection = connections.find(conn => 
+          (conn.from.id === star.id && conn.to.id === otherStar.id) ||
+          (conn.from.id === otherStar.id && conn.to.id === star.id)
+        );
+
+        if (!existingConnection) {
+          connections.push({
+            from: star,
+            to: otherStar,
+            distance
+          });
+        }
+      });
+    });
+
+    return connections;
+  };
+
   // 生成星愿星星
   useEffect(() => {
     if (user && wishes.length > 0) {
@@ -131,7 +195,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           id: wish.id,
           x: position.x,
           y: position.y,
-          size: wish.priority === 'high' ? 32 : wish.priority === 'medium' ? 28 : 24,
+          size: wish.priority === 'high' ? 16 : wish.priority === 'medium' ? 12 : 10,
           brightness: wish.priority === 'high' ? 1 : wish.priority === 'medium' ? 0.9 : 0.8,
           twinkleDelay: Math.random() * 3,
           color: getWishStarColor(wish.category, wish.priority),
@@ -143,6 +207,11 @@ const LandingPage: React.FC<LandingPageProps> = ({
       setWishStars([]);
     }
   }, [user, wishes]);
+
+  // 计算星星连线
+  const starConnections = useMemo(() => {
+    return generateConnections(wishStars);
+  }, [wishStars]);
 
   // 处理星星点击
   const handleStarClick = (e: React.MouseEvent, wish: Wish) => {
@@ -181,6 +250,41 @@ const LandingPage: React.FC<LandingPageProps> = ({
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
       {/* 星愿星空背景 - 限制在安全区域 */}
       <div className="fixed inset-0 pointer-events-none">
+        {/* SVG 连线层 */}
+        <svg className="absolute inset-0 w-full h-full z-10">
+          {starConnections.map((connection, index) => {
+            // 计算连线的透明度，距离越近越亮
+            const opacity = Math.max(0.1, 1 - (connection.distance / 25));
+            
+            return (
+              <line
+                key={`connection-${index}`}
+                x1={`${connection.from.x}%`}
+                y1={`${connection.from.y}%`}
+                x2={`${connection.to.x}%`}
+                y2={`${connection.to.y}%`}
+                stroke="url(#connectionGradient)"
+                strokeWidth="1"
+                opacity={opacity}
+                className="animate-pulse"
+                style={{
+                  animationDuration: `${3 + Math.random() * 2}s`,
+                  animationDelay: `${Math.random() * 2}s`,
+                }}
+              />
+            );
+          })}
+          
+          {/* 定义连线渐变 */}
+          <defs>
+            <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.6" />
+              <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.6" />
+            </linearGradient>
+          </defs>
+        </svg>
+
         {/* 用户的星愿星星 - 只在安全区域显示 */}
         {wishStars.map((star) => (
           <div
@@ -194,34 +298,19 @@ const LandingPage: React.FC<LandingPageProps> = ({
             onClick={(e) => handleStarClick(e, star.wish)}
             title={`点击查看 ${star.wish.title}`}
           >
-            {/* 6角星本体 */}
+            {/* 发光圆点本体 */}
             <div
-              className="relative animate-pulse hover:animate-none transition-all duration-300 group-hover:scale-125 six-pointed-star"
+              className="relative animate-pulse hover:animate-none transition-all duration-300 group-hover:scale-150"
               style={{
                 animationDelay: `${star.twinkleDelay}s`,
                 animationDuration: `${2 + Math.random()}s`,
               }}
             >
-              <SixPointedStar
+              <GlowingDot
                 size={star.size}
                 color={star.color}
                 brightness={star.brightness}
-                className="drop-shadow-lg transition-all duration-300 star-glow-intense"
-              />
-              
-              {/* 额外的光晕效果 */}
-              <div
-                className="absolute inset-0 rounded-full animate-ping opacity-30"
-                style={{
-                  background: `radial-gradient(circle, ${star.color}60 0%, transparent 70%)`,
-                  animationDelay: `${star.twinkleDelay + 1}s`,
-                  animationDuration: '4s',
-                  width: `${star.size * 1.5}px`,
-                  height: `${star.size * 1.5}px`,
-                  left: '50%',
-                  top: '50%',
-                  transform: 'translate(-50%, -50%)',
-                }}
+                className="transition-all duration-300"
               />
             </div>
 
@@ -243,17 +332,23 @@ const LandingPage: React.FC<LandingPageProps> = ({
         ))}
 
         {/* 背景装饰星星（静态，更少更精致） */}
-        {[...Array(12)].map((_, i) => (
+        {[...Array(15)].map((_, i) => (
           <div
             key={`bg-star-${i}`}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-20 animate-pulse"
+            className="absolute animate-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 3}s`,
               animationDuration: `${3 + Math.random() * 2}s`,
             }}
-          />
+          >
+            <GlowingDot
+              size={2 + Math.random() * 3}
+              color="#ffffff"
+              brightness={0.3 + Math.random() * 0.4}
+            />
+          </div>
         ))}
       </div>
 
@@ -275,14 +370,14 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <div className="mb-6 sm:mb-8">
             <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-full px-6 sm:px-8 py-3 sm:py-4 border border-white/20">
               <div className="flex items-center space-x-2">
-                <SixPointedStar size={20} color="#fbbf24" brightness={1} />
+                <GlowingDot size={16} color="#fbbf24" brightness={1} />
                 <span className="text-sm sm:text-base font-medium">
                   {wishCount} {t('landing.wishesPlanted')}
                 </span>
               </div>
               <div className="w-px h-6 bg-white/20"></div>
               <div className="text-xs sm:text-sm text-gray-300">
-                ✨ {t('landing.starryNight')}
+                ✨ 夜空中闪烁着你的星愿
               </div>
             </div>
           </div>
@@ -318,7 +413,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               className="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 min-h-[56px]"
             >
               <Plus className="w-5 h-5" />
-              <span>{wishCount === 0 ? t('landing.plantFirst') : t('landing.plantWish')}</span>
+              <span>{wishCount === 0 ? '播种第一颗星愿' : t('landing.plantWish')}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
