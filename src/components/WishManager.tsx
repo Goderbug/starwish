@@ -24,7 +24,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   onNavigate 
 }) => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [selectedWishes, setSelectedWishes] = useState<string[]>([]);
   const [showShareModal, setShowShareModal] = useState(false);
   const [generatedLink, setGeneratedLink] = useState('');
@@ -68,9 +68,8 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 修复：简化条件检查，移除用户状态依赖
+  // ✅ 简化：只检查是否选中星愿和是否正在生成
   const canWeaveChain = useMemo(() => {
-    // 只检查基本条件：有选中的星愿且不在生成中
     return selectedWishes.length > 0 && !isGeneratingLink;
   }, [selectedWishes.length, isGeneratingLink]);
 
@@ -197,28 +196,20 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 修复：简化按钮文本逻辑，移除用户状态检查
+  // ✅ 简化按钮文本逻辑
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
     if (selectedWishes.length === 0) return '请选择星愿';
     return t('manager.weaveChain');
   };
 
-  // ✅ 修复：简化星链生成逻辑，在函数内部检查用户状态
+  // ✅ 核心修复：完全移除用户状态检查，只检查星愿选择
   const generateShareLink = useCallback(async () => {
     console.log('🔄 开始创建星链...', { 
-      selectedWishesCount: selectedWishes.length,
-      userExists: !!user,
-      loading
+      selectedWishesCount: selectedWishes.length
     });
 
-    // ✅ 在函数内部检查用户状态，而不是在外部依赖中
-    if (!user) {
-      console.log('❌ 用户未登录');
-      setError('请先登录后再创建星链');
-      return;
-    }
-
+    // ✅ 只检查星愿选择，不检查用户状态（因为能进入此页面就证明已登录）
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
@@ -235,17 +226,17 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // ✅ 简单直接：创建新的星链
+      // ✅ 直接使用user，因为能进入此页面就证明user存在
       const shareCode = generateShareCode();
       console.log('📝 创建星链...', { shareCode });
       
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
-          creator_id: user.id,
+          creator_id: user!.id, // 使用非空断言，因为能进入此页面就证明user存在
           share_code: shareCode,
           is_active: true,
-          is_opened: false, // 明确设置为未开启
+          is_opened: false,
           name: `星链 ${new Date().toLocaleDateString()}`,
           description: `包含 ${selectedWishes.length} 个星愿的神秘星链`,
           total_opens: 0
@@ -292,7 +283,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, isGeneratingLink, user, loading]);
+  }, [selectedWishes, isGeneratingLink, user]);
 
   const copyLink = async () => {
     try {
