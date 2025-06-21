@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Share2, Copy, Eye, Calendar, Users, ExternalLink, Check, CheckCircle, XCircle } from 'lucide-react';
+import { Share2, Copy, Eye, Calendar, Users, ExternalLink, Check, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { supabase, StarChain } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -13,16 +13,49 @@ const ShareHistory: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ 简化：只在有用户时获取数据，不需要额外检查
   useEffect(() => {
     if (user) {
       fetchStarChains();
+      // ✅ 设置实时监听星链状态变化
+      setupRealtimeSubscription();
     } else {
-      // 如果没有用户，设置loading为false，显示空状态
       setLoading(false);
     }
   }, [user]);
+
+  // ✅ 新增：实时监听星链状态变化
+  const setupRealtimeSubscription = () => {
+    if (!user) return;
+
+    const subscription = supabase
+      .channel('star_chains_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'star_chains',
+          filter: `creator_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('🔄 检测到星链状态变化:', payload);
+          
+          // 更新本地状态中对应的星链
+          setStarChains(prev => prev.map(chain => 
+            chain.id === payload.new.id 
+              ? { ...chain, ...payload.new }
+              : chain
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  };
 
   const fetchStarChains = async () => {
     if (!user) return;
@@ -51,6 +84,38 @@ const ShareHistory: React.FC = () => {
       console.error('Error fetching star chains:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ✅ 新增：手动刷新功能
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchStarChains();
+    setRefreshing(false);
+  };
+
+  // ✅ 新增：检查单个星链的最新状态
+  const checkChainStatus = async (chainId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('star_chains')
+        .select('is_opened, opened_at, opener_fingerprint, total_opens')
+        .eq('id', chainId)
+        .single();
+
+      if (error) throw error;
+
+      // 更新本地状态
+      setStarChains(prev => prev.map(chain => 
+        chain.id === chainId 
+          ? { ...chain, ...data }
+          : chain
+      ));
+
+      return data;
+    } catch (error) {
+      console.error('检查星链状态失败:', error);
+      return null;
     }
   };
 
@@ -166,60 +231,77 @@ const ShareHistory: React.FC = () => {
               <p className="text-gray-300">{t('shareHistory.subtitle')}</p>
             </div>
             
-            {/* Filter Tabs */}
-            {starChains.length > 0 && (
-              <div className="flex bg-white/5 backdrop-blur-sm rounded-xl p-1 border border-white/10">
-                <button
-                  onClick={() => setActiveFilter('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
-                    activeFilter === 'all'
-                      ? 'bg-white/20 text-white shadow-lg'
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <span>全部</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                    activeFilter === 'all' ? 'bg-white/20' : 'bg-white/10'
-                  }`}>
-                    {filterCounts.all}
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => setActiveFilter('unopened')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
-                    activeFilter === 'unopened'
-                      ? 'bg-blue-500/20 text-blue-300 shadow-lg'
-                      : 'text-gray-400 hover:text-blue-300 hover:bg-blue-500/10'
-                  }`}
-                >
-                  <XCircle className="w-3 h-3" />
-                  <span>未开启</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                    activeFilter === 'unopened' ? 'bg-blue-500/20' : 'bg-white/10'
-                  }`}>
-                    {filterCounts.unopened}
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => setActiveFilter('opened')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
-                    activeFilter === 'opened'
-                      ? 'bg-green-500/20 text-green-300 shadow-lg'
-                      : 'text-gray-400 hover:text-green-300 hover:bg-green-500/10'
-                  }`}
-                >
-                  <CheckCircle className="w-3 h-3" />
-                  <span>已开启</span>
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${
-                    activeFilter === 'opened' ? 'bg-green-500/20' : 'bg-white/10'
-                  }`}>
-                    {filterCounts.opened}
-                  </span>
-                </button>
-              </div>
-            )}
+            {/* ✅ 新增：刷新按钮 */}
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all ${
+                  refreshing 
+                    ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
+                    : 'bg-white/10 hover:bg-white/20 text-white'
+                }`}
+                title="刷新状态"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                <span className="text-sm">{refreshing ? '刷新中...' : '刷新'}</span>
+              </button>
+
+              {/* Filter Tabs */}
+              {starChains.length > 0 && (
+                <div className="flex bg-white/5 backdrop-blur-sm rounded-xl p-1 border border-white/10">
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
+                      activeFilter === 'all'
+                        ? 'bg-white/20 text-white shadow-lg'
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <span>全部</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeFilter === 'all' ? 'bg-white/20' : 'bg-white/10'
+                    }`}>
+                      {filterCounts.all}
+                    </span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveFilter('unopened')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
+                      activeFilter === 'unopened'
+                        ? 'bg-blue-500/20 text-blue-300 shadow-lg'
+                        : 'text-gray-400 hover:text-blue-300 hover:bg-blue-500/10'
+                    }`}
+                  >
+                    <XCircle className="w-3 h-3" />
+                    <span>未开启</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeFilter === 'unopened' ? 'bg-blue-500/20' : 'bg-white/10'
+                    }`}>
+                      {filterCounts.unopened}
+                    </span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setActiveFilter('opened')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2 ${
+                      activeFilter === 'opened'
+                        ? 'bg-green-500/20 text-green-300 shadow-lg'
+                        : 'text-gray-400 hover:text-green-300 hover:bg-green-500/10'
+                    }`}
+                  >
+                    <CheckCircle className="w-3 h-3" />
+                    <span>已开启</span>
+                    <span className={`px-2 py-0.5 rounded-full text-xs ${
+                      activeFilter === 'opened' ? 'bg-green-500/20' : 'bg-white/10'
+                    }`}>
+                      {filterCounts.opened}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -296,16 +378,27 @@ const ShareHistory: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* Status indicator - 替换原来的 active/inactive */}
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${openStatus.bgColor} ${openStatus.color} border ${openStatus.borderColor}`}>
-                      <StatusIcon className="w-3 h-3" />
-                      <span>{openStatus.text}</span>
+                    {/* ✅ 改进：状态指示器增加实时更新提示 */}
+                    <div className="flex items-center space-x-2">
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${openStatus.bgColor} ${openStatus.color} border ${openStatus.borderColor}`}>
+                        <StatusIcon className="w-3 h-3" />
+                        <span>{openStatus.text}</span>
+                      </div>
+                      
+                      {/* ✅ 新增：单个星链状态检查按钮 */}
+                      <button
+                        onClick={() => checkChainStatus(chain.id)}
+                        className="p-1 text-gray-400 hover:text-white transition-colors"
+                        title="检查最新状态"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
 
-                  {/* Chain stats - 统一布局设计 */}
+                  {/* Chain stats */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-                    {/* 开启状态 - 替换原来的开启次数 */}
+                    {/* 开启状态 */}
                     <div className="bg-white/5 rounded-xl p-4 text-center">
                       <div className={`text-2xl font-bold mb-1 ${openStatus.color}`}>
                         {chain.is_opened ? '✓' : '○'}
@@ -319,7 +412,7 @@ const ShareHistory: React.FC = () => {
                       <div className="text-xs text-gray-400">{t('shareHistory.wishes')}</div>
                     </div>
                     
-                    {/* 创建时间 - 使用简化格式 */}
+                    {/* 创建时间 */}
                     <div className="bg-white/5 rounded-xl p-4 text-center">
                       <div className="text-2xl font-bold text-white mb-1">{formatShortDate(chain.created_at)}</div>
                       <div className="text-xs text-gray-400">{t('shareHistory.created')}</div>
@@ -341,7 +434,7 @@ const ShareHistory: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* 开启详情 - 只有已开启的才显示 */}
+                  {/* 开启详情 */}
                   {chain.is_opened && chain.opened_at && (
                     <div className="mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
                       <div className="flex items-center space-x-2 text-sm text-green-300">
@@ -406,7 +499,7 @@ const ShareHistory: React.FC = () => {
                       </div>
                     )}
                     
-                    {/* 预览按钮 - 已开启的显示为灰色 */}
+                    {/* 预览按钮 */}
                     <button
                       onClick={() => window.open(`${window.location.origin}?box=${chain.share_code}`, '_blank')}
                       className={`flex-1 sm:flex-initial flex items-center justify-center space-x-2 px-4 py-3 rounded-xl transition-all ${
