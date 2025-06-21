@@ -254,7 +254,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
         <svg className="absolute inset-0 w-full h-full z-10">
           {starConnections.map((connection, index) => {
             // 计算连线的透明度，距离越近越亮
-            const opacity = Math.max(0.1, 1 - (connection.distance / 25));
+            const opacity = Math.max(0.2, 1 - (connection.distance / 25));
             
             return (
               <line
@@ -263,26 +263,18 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 y1={`${connection.from.y}%`}
                 x2={`${connection.to.x}%`}
                 y2={`${connection.to.y}%`}
-                stroke="url(#connectionGradient)"
+                stroke="#ffffff"
                 strokeWidth="1"
-                opacity={opacity}
+                opacity={opacity * 0.6}
                 className="animate-pulse"
                 style={{
                   animationDuration: `${3 + Math.random() * 2}s`,
                   animationDelay: `${Math.random() * 2}s`,
+                  filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))',
                 }}
               />
             );
           })}
-          
-          {/* 定义连线渐变 */}
-          <defs>
-            <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#a855f7" stopOpacity="0.6" />
-              <stop offset="50%" stopColor="#ec4899" stopOpacity="0.8" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.6" />
-            </linearGradient>
-          </defs>
         </svg>
 
         {/* 用户的星愿星星 - 只在安全区域显示 */}
