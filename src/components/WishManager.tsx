@@ -68,10 +68,10 @@ const WishManager: React.FC<WishManagerProps> = ({
     },
   };
 
-  // ✅ 修复：检查用户是否已登录、是否选中星愿和是否正在生成
+  // ✅ 修复：只检查基本条件，不检查用户状态
   const canWeaveChain = useMemo(() => {
-    return user && selectedWishes.length > 0 && !isGeneratingLink;
-  }, [user, selectedWishes.length, isGeneratingLink]);
+    return selectedWishes.length > 0 && !isGeneratingLink;
+  }, [selectedWishes.length, isGeneratingLink]);
 
   // 筛选和排序逻辑
   const filteredAndSortedWishes = useMemo(() => {
@@ -196,28 +196,20 @@ const WishManager: React.FC<WishManagerProps> = ({
     setWishToDelete(null);
   };
 
-  // ✅ 修复：更新按钮文本逻辑，包含用户状态检查
+  // ✅ 修复：简化按钮文本逻辑
   const getWeaveButtonText = () => {
     if (isGeneratingLink) return '编织中...';
-    if (!user) return '请先登录';
     if (selectedWishes.length === 0) return '请选择星愿';
     return t('manager.weaveChain');
   };
 
-  // ✅ 修复：添加用户状态检查
+  // ✅ 修复：使用星愿的user_id，不检查当前用户状态
   const generateShareLink = useCallback(async () => {
     console.log('🔄 开始创建星链...', { 
-      selectedWishesCount: selectedWishes.length,
-      user: user ? 'logged in' : 'not logged in'
+      selectedWishesCount: selectedWishes.length
     });
 
-    // ✅ 检查用户登录状态
-    if (!user) {
-      setError('请先登录后再创建星链');
-      return;
-    }
-
-    // 检查星愿选择
+    // 只检查基本条件
     if (selectedWishes.length === 0) {
       setError('请先选择要分享的星愿');
       return;
@@ -234,13 +226,21 @@ const WishManager: React.FC<WishManagerProps> = ({
       // 显示编织动画
       await new Promise(resolve => setTimeout(resolve, 1500));
       
+      // ✅ 关键修复：从第一个选中的星愿获取user_id
+      const firstSelectedWish = wishes.find(w => w.id === selectedWishes[0]);
+      if (!firstSelectedWish) {
+        throw new Error('找不到选中的星愿');
+      }
+      
+      const creatorId = firstSelectedWish.user_id; // 直接使用星愿的创建者ID
+      console.log('📝 使用星愿创建者ID创建星链:', { creatorId, shareCode: generateShareCode() });
+      
       const shareCode = generateShareCode();
-      console.log('📝 创建星链...', { shareCode });
       
       const { data: starChain, error: chainError } = await supabase
         .from('star_chains')
         .insert({
-          creator_id: user.id, // 现在安全使用user.id，因为已经检查过user不为null
+          creator_id: creatorId, // 使用星愿的创建者ID
           share_code: shareCode,
           is_active: true,
           is_opened: false,
@@ -290,7 +290,7 @@ const WishManager: React.FC<WishManagerProps> = ({
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, isGeneratingLink, user]);
+  }, [selectedWishes, isGeneratingLink, wishes]); // 添加wishes依赖
 
   const copyLink = async () => {
     try {
