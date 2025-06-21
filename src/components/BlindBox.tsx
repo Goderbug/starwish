@@ -20,7 +20,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const [componentLoading, setComponentLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [openingAttempted, setOpeningAttempted] = useState(false); // 防止重复开启
+  const [openingAttempted, setOpeningAttempted] = useState(false);
 
   useEffect(() => {
     if (boxId) {
@@ -48,7 +48,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       if (chainError) {
         console.error('❌ 获取星链失败:', chainError);
         
-        // 根据错误类型提供更准确的错误信息
         if (chainError.code === 'PGRST116') {
           setError('这个星愿盲盒不存在或已失效');
         } else {
@@ -64,18 +63,15 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       const now = new Date();
       
-      // ✅ 严格检查：已开启超过2分钟的星链不允许访问
+      // ✅ 修复：更宽松的状态检查，允许查看已开启的结果
       if (chainData.is_opened) {
         const openedTime = new Date(chainData.opened_at);
         const timeDiff = now.getTime() - openedTime.getTime();
-        const twoMinutes = 2 * 60 * 1000; // 2分钟
+        const fiveMinutes = 5 * 60 * 1000; // 5分钟
 
-        if (timeDiff > twoMinutes) {
-          setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
-          return;
-        } else {
-          // 如果在2分钟内，说明是刚开启的，允许查看结果
-          console.log('ℹ️ 星链刚开启不久，允许查看结果');
+        if (timeDiff > fiveMinutes) {
+          // 超过5分钟的已开启星链，仍然允许查看，但不允许重新开启
+          console.log('ℹ️ 星链已开启超过5分钟，显示已开启状态');
         }
       }
       
@@ -117,20 +113,23 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         wishes: wishes
       });
 
-      // ✅ 如果星链已开启，直接显示结果
+      // ✅ 如果星链已开启，获取开启记录来显示结果
       if (chainData.is_opened && chainData.opened_at) {
-        // 从数据库获取开启记录来确定选中的星愿
-        const { data: openRecord } = await supabase
-          .from('blind_box_opens')
-          .select('wish_id, wish:wishes(*)')
-          .eq('chain_id', chainData.id)
-          .order('opened_at', { ascending: false })
-          .limit(1)
-          .single();
+        try {
+          const { data: openRecord } = await supabase
+            .from('blind_box_opens')
+            .select('wish_id, wish:wishes(*)')
+            .eq('chain_id', chainData.id)
+            .order('opened_at', { ascending: false })
+            .limit(1)
+            .single();
 
-        if (openRecord && openRecord.wish) {
-          setSelectedWish(openRecord.wish);
-          setHasOpened(true);
+          if (openRecord && openRecord.wish) {
+            setSelectedWish(openRecord.wish);
+            setHasOpened(true);
+          }
+        } catch (error) {
+          console.warn('⚠️ 获取开启记录失败，但不影响主流程:', error);
         }
       }
 
@@ -171,7 +170,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       return;
     }
     
-    setOpeningAttempted(true); // 标记开启尝试
+    setOpeningAttempted(true);
     setIsOpening(true);
     setError(null);
     
@@ -186,7 +185,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       setSelectedWish(chosen);
 
       try {
-        // ✅ 关键修复：使用更严格的乐观锁更新
+        // ✅ 关键修复：简化更新条件，移除过于严格的检查
         const { data: updateResult, error: updateChainError } = await supabase
           .from('star_chains')
           .update({
@@ -196,12 +195,24 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             total_opens: starChain.total_opens + 1
           })
           .eq('id', starChain.id)
-          .eq('is_opened', false) // 乐观锁：只有未开启的才能更新
-          .eq('is_active', true)  // 额外检查：必须是活跃状态
+          .eq('is_opened', false) // 只检查是否未开启
           .select();
 
-        // 如果更新失败，说明已经被其他人开启了
-        if (updateChainError || !updateResult || updateResult.length === 0) {
+        // ✅ 改进错误处理：提供更详细的错误信息
+        if (updateChainError) {
+          console.error('❌ 更新星链状态失败:', updateChainError);
+          
+          // 检查是否是权限问题
+          if (updateChainError.code === '42501') {
+            throw new Error('权限不足，请重新登录后重试');
+          } else if (updateChainError.message?.includes('row-level security')) {
+            throw new Error('访问被拒绝，可能星链已失效');
+          } else {
+            throw new Error('更新星链状态失败：' + updateChainError.message);
+          }
+        }
+
+        if (!updateResult || updateResult.length === 0) {
           // 重新检查星链状态
           const { data: currentChain } = await supabase
             .from('star_chains')
@@ -212,35 +223,53 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           if (currentChain?.is_opened) {
             throw new Error('这个盲盒已经被其他人开启了');
           } else {
-            throw new Error('开启失败，请重试');
+            throw new Error('开启失败，星链状态未更新，请重试');
           }
         }
 
         console.log('✅ 星链状态更新成功');
 
+        // ✅ 并行执行记录操作，提高性能
+        const recordPromises = [];
+
         // 记录开启事件
-        await supabase
-          .from('blind_box_opens')
-          .insert({
-            chain_id: starChain.id,
-            wish_id: chosen.id,
-            opener_fingerprint: user.id,
-            user_agent: navigator.userAgent,
-            ip_hash: 'hashed_ip'
-          });
+        recordPromises.push(
+          supabase
+            .from('blind_box_opens')
+            .insert({
+              chain_id: starChain.id,
+              wish_id: chosen.id,
+              opener_fingerprint: user.id,
+              user_agent: navigator.userAgent,
+              ip_hash: 'hashed_ip'
+            })
+        );
 
         // 保存到用户的收到星愿列表
-        await supabase
-          .from('user_opened_wishes')
-          .insert({
-            user_fingerprint: user.id,
-            wish_id: chosen.id,
-            chain_id: starChain.id,
-            creator_name: starChain.creator?.name || 'Anonymous',
-            opened_at: new Date().toISOString(),
-            is_favorite: false,
-            notes: ''
-          });
+        recordPromises.push(
+          supabase
+            .from('user_opened_wishes')
+            .insert({
+              user_fingerprint: user.id,
+              wish_id: chosen.id,
+              chain_id: starChain.id,
+              creator_name: starChain.creator?.name || 'Anonymous',
+              opened_at: new Date().toISOString(),
+              is_favorite: false,
+              notes: ''
+            })
+        );
+
+        // 等待所有记录操作完成
+        const results = await Promise.allSettled(recordPromises);
+        
+        // 检查是否有失败的操作
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const operation = index === 0 ? '开启记录' : '用户星愿保存';
+            console.warn(`⚠️ ${operation}失败:`, result.reason);
+          }
+        });
 
         // 更新本地状态
         setStarChain(prev => ({
@@ -254,7 +283,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         console.error('❌ 数据库操作失败:', recordError);
         setError('开启失败：' + recordError.message);
         setIsOpening(false);
-        setOpeningAttempted(false); // 重置开启尝试标记
+        setOpeningAttempted(false);
         return;
       }
 
@@ -263,7 +292,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     } catch (error: any) {
       console.error('❌ 打开盲盒失败:', error);
       setError('打开盲盒失败：' + error.message);
-      setOpeningAttempted(false); // 重置开启尝试标记
+      setOpeningAttempted(false);
     } finally {
       setIsOpening(false);
     }
