@@ -12,7 +12,7 @@ interface BlindBoxProps {
 
 const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth(); // ✅ 简化：只使用 user 和 loading
+  const { user, loading } = useAuth();
   const [starChain, setStarChain] = useState<any>(null);
   const [selectedWish, setSelectedWish] = useState<any>(null);
   const [isOpening, setIsOpening] = useState(false);
@@ -21,7 +21,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // ✅ 简化：只在认证状态确定且有boxId时获取数据
   useEffect(() => {
     if (boxId && !loading) {
       fetchStarChain();
@@ -34,8 +33,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     try {
       console.log('🔍 获取星链数据:', boxId);
       
-      // ✅ 修复：现在RLS策略会自动过滤已开启的星链
-      // 如果查询返回空结果，说明星链已开启、过期或不存在
+      // ✅ 修复：更详细的错误处理和状态检查
       const { data: chainData, error: chainError } = await supabase
         .from('star_chains')
         .select(`
@@ -48,8 +46,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       if (chainError) {
         console.error('❌ 获取星链失败:', chainError);
         
-        // PGRST116 表示没有找到记录，这可能意味着星链已开启或不存在
         if (chainError.code === 'PGRST116') {
+          // 没有找到记录，可能是已开启、过期或不存在
           setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
         } else {
           setError('获取星链失败，请重试');
@@ -58,19 +56,28 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       }
 
       if (!chainData) {
-        console.error('❌ 星链不存在或已失效');
-        setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
+        console.error('❌ 星链不存在');
+        setError('星链不存在或已失效');
         return;
       }
 
       console.log('✅ 星链数据获取成功:', chainData);
 
-      // 由于RLS策略已经过滤了已开启的星链，这里不需要再检查is_opened
-      // 但为了代码的健壮性，我们仍然保留这个检查
+      // ✅ 修复：更精确的状态检查
+      // 检查是否已经被开启（但允许短时间内的访问以完成开启流程）
       if (chainData.is_opened) {
-        console.log('❌ 星链已被开启（不应该到达这里）');
-        setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
-        return;
+        const openedTime = new Date(chainData.opened_at);
+        const now = new Date();
+        const timeDiff = now.getTime() - openedTime.getTime();
+        const fiveMinutes = 5 * 60 * 1000; // 5分钟
+
+        if (timeDiff > fiveMinutes) {
+          console.log('❌ 星链已被开启超过5分钟');
+          setError('这个星愿盲盒已经被开启过了，每个盲盒只能开启一次哦！');
+          return;
+        } else {
+          console.log('ℹ️ 星链已开启但在允许时间内，可能是开启流程中');
+        }
       }
 
       // 检查是否过期
@@ -140,6 +147,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     if (!starChain || !starChain.wishes || starChain.wishes.length === 0) {
       console.error('❌ 没有可用的星愿');
       setError('没有可用的星愿');
+      return;
+    }
+
+    // ✅ 修复：检查是否已经被开启
+    if (starChain.is_opened) {
+      console.error('❌ 星链已被开启');
+      setError('这个星愿盲盒已经被开启过了');
       return;
     }
     
@@ -227,6 +241,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           console.log('✅ 用户星愿保存成功');
         }
 
+        // ✅ 修复：更新本地状态以反映星链已开启
+        setStarChain(prev => ({
+          ...prev,
+          is_opened: true,
+          opened_at: new Date().toISOString(),
+          opener_fingerprint: user.id
+        }));
+
       } catch (recordError: any) {
         console.error('❌ 数据库操作失败:', recordError);
         setError('开启失败：' + recordError.message);
@@ -251,7 +273,6 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     }
   }, [user, showAuthModal]);
 
-  // ✅ 简化：只在认证状态加载或组件加载时显示加载界面
   if (loading || componentLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -656,12 +677,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         {/* Open button */}
         <button
           onClick={openBlindBox}
-          disabled={!starChain.wishes || starChain.wishes.length === 0}
+          disabled={!starChain.wishes || starChain.wishes.length === 0 || starChain.is_opened}
           className="group w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 sm:px-12 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-xl flex items-center justify-center space-x-3 mx-auto relative overflow-hidden touch-manipulation min-h-[64px]"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 animate-shimmer"></div>
           <Star className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-spin relative z-10" fill="currentColor" />
-          <span className="relative z-10">开启盲盒</span>
+          <span className="relative z-10">
+            {starChain.is_opened ? '已开启' : '开启盲盒'}
+          </span>
           <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-pulse relative z-10" />
         </button>
       </div>
