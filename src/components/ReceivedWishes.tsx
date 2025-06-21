@@ -14,9 +14,13 @@ const ReceivedWishes: React.FC = () => {
   const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>({});
   const [savingNotes, setSavingNotes] = useState<{ [key: string]: boolean }>({});
 
+  // ✅ 简化：只在有用户时获取数据，不需要额外检查
   useEffect(() => {
     if (user) {
       fetchOpenedWishes();
+    } else {
+      // 如果没有用户，设置loading为false，显示空状态
+      setLoading(false);
     }
   }, [user]);
 
@@ -132,20 +136,6 @@ const ReceivedWishes: React.FC = () => {
       minute: '2-digit'
     });
   };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-28 h-28 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Sparkles className="w-14 h-14 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-gray-300">请先登录</h3>
-          <p className="text-gray-400 mb-6">登录后即可查看你收到的所有星愿</p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
