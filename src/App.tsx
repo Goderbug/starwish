@@ -15,13 +15,12 @@ import { useLanguage } from './contexts/LanguageContext';
 // Main App component wrapped with language context
 const AppContent: React.FC = () => {
   const { t } = useLanguage();
-  const { user, loading } = useAuth(); // ✅ 简化：只使用 user 和 loading
+  const { user, loading } = useAuth();
   const [currentPage, setCurrentPage] = useState<'landing' | 'create' | 'manage' | 'blindbox' | 'shareHistory' | 'receivedWishes'>('landing');
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [sharedBoxId, setSharedBoxId] = useState<string | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
   
-  // 统一的登录模态框状态
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Check if accessing via shared link
@@ -34,23 +33,21 @@ const AppContent: React.FC = () => {
     }
   }, []);
 
-  // ✅ 简化：只在用户状态确定后加载数据
+  // ✅ 优化：减少重复数据获取和日志
   useEffect(() => {
-    // 如果还在加载认证状态，等待
     if (loading) {
-      console.log('⏳ 认证状态加载中，等待...');
       return;
     }
 
     if (user) {
-      console.log('✅ 用户已登录，加载星愿数据:', user.email);
+      // 只在开发环境显示日志
+      if (import.meta.env.DEV) {
+        console.log('✅ 用户已登录，加载星愿数据:', user.email);
+      }
       fetchWishes();
     } else {
-      console.log('❌ 用户未登录，清空星愿数据');
       setWishes([]);
-      // 只有在非盲盒页面时才跳转到首页
       if (currentPage !== 'blindbox') {
-        console.log('🔄 跳转到首页');
         setCurrentPage('landing');
       }
     }
@@ -60,7 +57,6 @@ const AppContent: React.FC = () => {
     if (!user) return;
 
     try {
-      console.log('📡 获取星愿数据...');
       const { data, error } = await supabase
         .from('wishes')
         .select('*')
@@ -73,7 +69,10 @@ const AppContent: React.FC = () => {
         return;
       }
       
-      console.log('✅ 星愿数据加载成功:', data?.length || 0, '个');
+      // 只在开发环境或数据变化时显示日志
+      if (import.meta.env.DEV) {
+        console.log('✅ 星愿数据加载成功:', data?.length || 0, '个');
+      }
       setWishes(data || []);
       setAppError(null);
     } catch (error) {
@@ -84,13 +83,11 @@ const AppContent: React.FC = () => {
 
   const addWish = async (wishData: Omit<Wish, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
     if (!user) {
-      console.error('❌ 用户未登录，无法创建星愿');
       setShowAuthModal(true);
       return;
     }
 
     try {
-      console.log('📝 创建新星愿:', wishData.title);
       const { data, error } = await supabase
         .from('wishes')
         .insert({
@@ -102,11 +99,12 @@ const AppContent: React.FC = () => {
 
       if (error) throw error;
       
-      console.log('✅ 星愿创建成功:', data.title);
-      // 更新本地状态
-      setWishes(prev => [data, ...prev]);
+      // 只在开发环境显示日志
+      if (import.meta.env.DEV) {
+        console.log('✅ 星愿创建成功:', data.title);
+      }
       
-      // 创建成功后跳转到管理页面
+      setWishes(prev => [data, ...prev]);
       setCurrentPage('manage');
     } catch (error) {
       console.error('❌ 创建星愿失败:', error);
@@ -146,9 +144,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // 统一的登录处理函数
   const handleAuthRequired = () => {
-    console.log('🔐 需要登录，显示登录模态框');
     setShowAuthModal(true);
   };
 
@@ -192,7 +188,6 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // ✅ 简化：只在认证状态加载时显示加载界面
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 text-white flex items-center justify-center">
@@ -268,7 +263,6 @@ const AppContent: React.FC = () => {
         )}
       </div>
 
-      {/* 统一的登录模态框 */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
