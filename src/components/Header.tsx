@@ -90,10 +90,10 @@ const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
           ) : (
-            /* Sign in button */
+            /* Sign in button - 调整高度与语言切换器一致 */
             <button
               onClick={handleSignIn}
-              className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full px-4 py-2 transition-all touch-manipulation"
+              className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full px-4 py-2.5 transition-all touch-manipulation"
             >
               <LogIn className="w-4 h-4" />
               <span className="hidden sm:inline text-sm font-medium">{t('landing.signIn')}</span>
