@@ -67,23 +67,23 @@ const Header: React.FC<HeaderProps> = ({
             <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
           ) : user ? (
             <div className="flex items-center space-x-3">
-              {/* User info */}
-              <div className="hidden sm:flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2">
+              {/* User info - 调整高度与语言切换器一致 */}
+              <div className="hidden sm:flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2.5">
                 <User className="w-4 h-4 text-purple-400" />
                 <span className="text-sm font-medium text-white max-w-32 truncate">
                   {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}
                 </span>
               </div>
               
-              {/* Mobile user indicator */}
-              <div className="sm:hidden w-8 h-8 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
+              {/* Mobile user indicator - 调整高度与语言切换器一致 */}
+              <div className="sm:hidden w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-purple-400" />
               </div>
 
-              {/* Sign out button */}
+              {/* Sign out button - 调整高度与语言切换器一致 */}
               <button
                 onClick={handleSignOut}
-                className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation"
+                className="p-2.5 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation"
                 title={t('landing.signOut')}
               >
                 <LogOut className="w-4 h-4" />
