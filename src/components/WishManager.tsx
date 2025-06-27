@@ -321,7 +321,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   // Star chain weaving animation
   if (isGeneratingLink) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 flex items-center justify-center relative overflow-hidden px-4">
         <div className="absolute inset-0">
           {[...Array(80)].map((_, i) => (
             <div
@@ -382,7 +382,7 @@ const WishManager: React.FC<WishManagerProps> = ({
   }
 
   return (
-    <div className="min-h-screen p-4 pb-32">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 pb-32">
       <div className="max-w-4xl mx-auto">
         {/* Page Title */}
         <div className="text-center mb-8 sm:mb-12">
@@ -868,7 +868,7 @@ const WishManager: React.FC<WishManagerProps> = ({
       </div>
 
       {/* 底部悬浮的选择和创建星链组件 */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-900 via-slate-900/95 to-transparent backdrop-blur-sm">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-slate-950 via-slate-950/95 to-transparent backdrop-blur-sm">
         <div className="p-4">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">

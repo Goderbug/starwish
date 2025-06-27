@@ -245,7 +245,7 @@ const ShareHistory: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">{t('shareHistory.loading')}</p>
@@ -255,7 +255,7 @@ const ShareHistory: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 pb-8">
       <div className="max-w-4xl mx-auto">
         {/* Header with Filter Tabs */}
         <div className="mb-8">

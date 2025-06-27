@@ -67,7 +67,7 @@ const CreateWish: React.FC<CreateWishProps> = ({ onAddWish, onBack }) => {
 
   if (isSubmitting) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="relative mb-8">
             <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 flex items-center justify-center animate-pulse">
@@ -83,7 +83,7 @@ const CreateWish: React.FC<CreateWishProps> = ({ onAddWish, onBack }) => {
   }
 
   return (
-    <div className="min-h-screen p-4 pb-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 pb-8">
       <div className="max-w-2xl mx-auto">
         {/* Page Title - 移到这里并居中 */}
         <div className="text-center mb-8 sm:mb-12">

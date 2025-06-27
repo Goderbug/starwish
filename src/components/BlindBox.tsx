@@ -307,7 +307,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
   if (loading || componentLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">加载中...</p>
@@ -318,7 +318,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
   if (error || !starChain) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-28 h-28 sm:w-32 sm:h-32 bg-gradient-to-r from-gray-400/20 to-gray-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
@@ -342,7 +342,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
   if (isOpening) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden px-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 flex items-center justify-center relative overflow-hidden px-4">
         {/* Animated particles */}
         <div className="absolute inset-0">
           {[...Array(100)].map((_, i) => (
@@ -402,7 +402,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     const Icon = categoryIcons[selectedWish.category];
     
     return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 flex items-center justify-center">
         <div className="max-w-lg mx-auto text-center w-full">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
@@ -508,7 +508,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
   // 未登录用户看到的登录提示界面
   if (!user) {
     return (
-      <div className="min-h-screen p-4 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 flex items-center justify-center">
         <div className="max-w-lg mx-auto text-center w-full">
           {/* Header */}
           <div className="mb-8 sm:mb-12">
@@ -621,7 +621,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
   // Initial blind box view for logged in users
   return (
-    <div className="min-h-screen p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 p-4 flex items-center justify-center">
       <div className="max-w-lg mx-auto text-center w-full">
         {/* Header */}
         <div className="mb-8 sm:mb-12">
