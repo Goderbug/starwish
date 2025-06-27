@@ -57,7 +57,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* Center - Empty space for better balance */}
         <div className="flex-1"></div>
 
-        {/* Right side - Language switcher and Auth components */}
+        {/* Right side - Language switcher, Auth components, and Bolt badge */}
         <div className="flex items-center space-x-3">
           {/* Language switcher */}
           <LanguageSwitcher />
@@ -99,6 +99,21 @@ const Header: React.FC<HeaderProps> = ({
               <span className="hidden sm:inline text-sm font-medium">{t('landing.signIn')}</span>
             </button>
           )}
+
+          {/* Bolt badge */}
+          <a
+            href="https://bolt.new/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block transition-transform hover:scale-105 active:scale-95"
+            title="Built with Bolt"
+          >
+            <img
+              src="/white_circle_360x360 copy.png"
+              alt="Built with Bolt"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full"
+            />
+          </a>
         </div>
       </div>
     </header>
