@@ -3,6 +3,7 @@ import { Heart, Sparkles, Gift, Plus, ArrowRight, Wand2, Link, History, Inbox, C
 import { useLanguage } from '../contexts/LanguageContext';
 import { User } from '@supabase/supabase-js';
 import { Wish } from '../lib/supabase';
+import TitleLogo from './TitleLogo';
 
 interface LandingPageProps {
   onNavigate: (page: 'create' | 'manage' | 'shareHistory' | 'receivedWishes') => void;
@@ -348,16 +349,13 @@ const LandingPage: React.FC<LandingPageProps> = ({
       <div className="text-center max-w-4xl mx-auto relative z-10 w-full" style={{ marginTop: '30vh' }}>
         {/* Title area - 现在有足够的空间，不会与星星重叠 */}
         <div className="mb-6 sm:mb-8 relative">
-          {/* Title - 使用更有设计感的字体和拉长的高度 */}
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent mb-2 sm:mb-4 leading-tight tracking-wider" 
-              style={{ 
-                fontFamily: '"Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif',
-                fontStretch: 'expanded',
-                letterSpacing: '0.05em',
-                lineHeight: '1.1'
-              }}>
-            Starwish.fun
-          </h1>
+          {/* 使用统一的Figma设计标题 */}
+          <div className="mb-2 sm:mb-4">
+            <TitleLogo 
+              size="large" 
+              className="mx-auto"
+            />
+          </div>
           <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-light">
             {t('landing.subtitle')}
           </p>
