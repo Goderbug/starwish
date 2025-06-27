@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
             <img
               src="/white_circle_360x360 copy.png"
               alt="Built with Bolt"
-              className="w-[80px] h-[80px] rounded-full"
+              className="w-[40px] h-[40px] rounded-full"
             />
           </a>
         </div>
