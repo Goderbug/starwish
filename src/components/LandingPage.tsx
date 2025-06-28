@@ -31,7 +31,7 @@ interface StarConnection {
   distance: number;
 }
 
-// 发光圆点组件
+// 发光圆点组件 - 更新颜色
 const GlowingDot: React.FC<{ 
   size: number; 
   color: string; 
@@ -138,9 +138,9 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
               />
               <defs>
                 <linearGradient id="chainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#a855f7" />
-                  <stop offset="50%" stopColor="#ec4899" />
-                  <stop offset="100%" stopColor="#f59e0b" />
+                  <stop offset="0%" stopColor="#FF3EEC" />
+                  <stop offset="50%" stopColor="#FFAB3E" />
+                  <stop offset="100%" stopColor="#FF3EEC" />
                 </linearGradient>
               </defs>
             </svg>
@@ -155,12 +155,13 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
             ].map((pos, i) => (
               <div
                 key={i}
-                className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"
+                className="absolute w-2 h-2 rounded-full animate-pulse"
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
                   transform: 'translate(-50%, -50%)',
                   animationDelay: `${i * 0.2}s`,
+                  backgroundColor: i % 2 === 0 ? '#FF3EEC' : '#FFAB3E',
                 }}
               />
             ))}
@@ -236,26 +237,26 @@ const LandingPage: React.FC<LandingPageProps> = ({
   const [wishStars, setWishStars] = useState<WishStar[]>([]);
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
 
-  // 根据星愿类型获取颜色
+  // 根据星愿类型获取颜色 - 更新为新的颜色方案
   const getWishStarColor = (category: string, priority: string) => {
     const colors = {
       gift: {
-        low: '#fbbf24',    // yellow-400
-        medium: '#f59e0b', // yellow-500
-        high: '#d97706'    // yellow-600
+        low: '#FFAB3E',    // 橙色
+        medium: '#FF3EEC', // 粉色
+        high: '#FFAB3E'    // 橙色
       },
       experience: {
-        low: '#a78bfa',    // violet-400
-        medium: '#8b5cf6', // violet-500
-        high: '#7c3aed'    // violet-600
+        low: '#FF3EEC',    // 粉色
+        medium: '#FFAB3E', // 橙色
+        high: '#FF3EEC'    // 粉色
       },
       moment: {
-        low: '#60a5fa',    // blue-400
-        medium: '#3b82f6', // blue-500
-        high: '#2563eb'    // blue-600
+        low: '#FFAB3E',    // 橙色
+        medium: '#FF3EEC', // 粉色
+        high: '#FFAB3E'    // 橙色
       }
     };
-    return colors[category]?.[priority] || '#fbbf24';
+    return colors[category]?.[priority] || '#FFAB3E';
   };
 
   // 生成星愿星星分布 - 缩小安全区域，限制在更小的范围内
@@ -399,11 +400,13 @@ const LandingPage: React.FC<LandingPageProps> = ({
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
       {/* 星愿星空背景 - 限制在更小的安全区域 */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* SVG 连线层 */}
+        {/* SVG 连线层 - 更新连线颜色 */}
         <svg className="absolute inset-0 w-full h-full z-10">
           {starConnections.map((connection, index) => {
             // 计算连线的透明度，距离越近越亮
             const opacity = Math.max(0.2, 1 - (connection.distance / 25));
+            // 根据连接的星星颜色选择连线颜色
+            const lineColor = index % 2 === 0 ? '#FF3EEC' : '#FFAB3E';
             
             return (
               <line
@@ -412,14 +415,14 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 y1={`${connection.from.y}%`}
                 x2={`${connection.to.x}%`}
                 y2={`${connection.to.y}%`}
-                stroke="#ffffff"
+                stroke={lineColor}
                 strokeWidth="1"
                 opacity={opacity * 0.6}
                 className="animate-pulse"
                 style={{
                   animationDuration: `${3 + Math.random() * 2}s`,
                   animationDelay: `${Math.random() * 2}s`,
-                  filter: 'drop-shadow(0 0 2px rgba(255, 255, 255, 0.3))',
+                  filter: `drop-shadow(0 0 2px ${lineColor}30)`,
                 }}
               />
             );
@@ -472,7 +475,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         ))}
 
-        {/* 背景装饰星星（静态，更少更精致） - 减少数量，让画面更简洁 */}
+        {/* 背景装饰星星（静态，更少更精致） - 减少数量，让画面更简洁，使用新颜色 */}
         {[...Array(6)].map((_, i) => (
           <div
             key={`bg-star-${i}`}
@@ -486,7 +489,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           >
             <GlowingDot
               size={1 + Math.random() * 2}
-              color="#ffffff"
+              color={i % 2 === 0 ? '#FF3EEC' : '#FFAB3E'}
               brightness={0.2 + Math.random() * 0.3}
             />
           </div>
@@ -514,7 +517,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <div className="mb-6 sm:mb-8">
             <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-full px-6 sm:px-8 py-3 sm:py-4 border border-white/20">
               <div className="flex items-center space-x-2">
-                <GlowingDot size={16} color="#fbbf24" brightness={1} />
+                <GlowingDot size={16} color="#FFAB3E" brightness={1} />
                 <span className="text-sm sm:text-base font-medium">
                   {wishCount} {t('landing.wishesPlanted')}
                 </span>
@@ -532,7 +535,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
             <div className="mb-4">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
-                <GlowingDot size={32} color="#ffffff" brightness={1} />
+                <GlowingDot size={32} color="#FF3EEC" brightness={1} />
               </div>
               <h3 className="text-xl font-bold mb-2 text-white">{t('auth.signInRequired')}</h3>
               <p className="text-purple-200 text-sm sm:text-base mb-6">
@@ -681,11 +684,12 @@ const LandingPage: React.FC<LandingPageProps> = ({
               {[...Array(20)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-pulse"
+                  className="absolute w-1 h-1 rounded-full animate-pulse"
                   style={{
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
                     animationDelay: `${Math.random() * 2}s`,
+                    backgroundColor: i % 2 === 0 ? '#FF3EEC' : '#FFAB3E',
                   }}
                 />
               ))}
