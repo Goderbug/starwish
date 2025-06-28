@@ -96,7 +96,7 @@ const CreateWish: React.FC<CreateWishProps> = ({ onAddWish, onBack }) => {
             {t('create.title')}
           </h1>
           <p className="text-gray-300 text-sm sm:text-base">
-            ✨ 在星空中种下你的心愿种子 ✨
+            ✨ {t('create.subtitle')} ✨
           </p>
         </div>
 

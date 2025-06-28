@@ -60,6 +60,7 @@ const translations = {
 
     // Create Wish
     'create.title': '播种新的星愿',
+    'create.subtitle': '在星空中种下你的心愿种子',
     'create.titleLabel': '心愿标题',
     'create.titlePlaceholder': '说出你的心愿...',
     'create.descLabel': '详细描述',
@@ -236,6 +237,7 @@ const translations = {
 
     // Create Wish
     'create.title': 'Sow a New Star Wish',
+    'create.subtitle': 'Plant your wish seed among the stars',
     'create.titleLabel': 'Wish Title',
     'create.titlePlaceholder': 'Tell your wish...',
     'create.descLabel': 'Description',
