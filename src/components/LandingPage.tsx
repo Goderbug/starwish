@@ -289,7 +289,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               transform: 'translate(-50%, -50%)',
             }}
             onClick={(e) => handleStarClick(e, star.wish)}
-            title={`点击查看 ${star.wish.title}`}
+            title={`${t('wishModal.clickToView')} ${star.wish.title}`}
           >
             {/* 发光圆点本体 */}
             <div
@@ -316,7 +316,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                   <span>•</span>
                   <span className="capitalize">{t(`priority.${star.wish.priority}`)}</span>
                 </div>
-                <div className="text-purple-300 text-xs mt-1">点击查看详情</div>
+                <div className="text-purple-300 text-xs mt-1">{t('wishModal.clickToView')}</div>
               </div>
               {/* 小箭头 - 修改为指向上方 */}
               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-b-6 border-transparent border-b-black/90"></div>
@@ -373,7 +373,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <div className="w-px h-6 bg-white/20"></div>
               <div className="text-xs sm:text-sm text-gray-300">
-                ✨ 夜空中闪烁着你的星愿
+                ✨ {t('landing.starryNight')}
               </div>
             </div>
           </div>
@@ -409,7 +409,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
               className="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 sm:px-8 py-4 rounded-full text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 min-h-[56px]"
             >
               <Plus className="w-5 h-5" />
-              <span>{wishCount === 0 ? '播种第一颗星愿' : t('landing.plantWish')}</span>
+              <span>{wishCount === 0 ? t('landing.plantFirst') : t('landing.plantWish')}</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
@@ -512,7 +512,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                     })}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white">星愿详情</h3>
+                    <h3 className="text-lg font-bold text-white">{t('wishModal.title')}</h3>
                     <p className="text-sm text-gray-400">{t(`category.${selectedWish.category}`)}</p>
                   </div>
                 </div>
@@ -543,7 +543,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Description */}
                 {selectedWish.description && (
                   <div className="bg-white/5 rounded-xl p-4">
-                    <h5 className="text-sm font-medium text-gray-300 mb-2">详细描述</h5>
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">{t('wishModal.description')}</h5>
                     <p className="text-gray-200 leading-relaxed">{selectedWish.description}</p>
                   </div>
                 )}
@@ -551,7 +551,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Tags */}
                 {selectedWish.tags && selectedWish.tags.length > 0 && (
                   <div>
-                    <h5 className="text-sm font-medium text-gray-300 mb-2">标签</h5>
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">{t('wishModal.tags')}</h5>
                     <div className="flex flex-wrap gap-2">
                       {selectedWish.tags.map((tag, index) => (
                         <span
@@ -569,7 +569,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Price */}
                 {selectedWish.estimated_price && (
                   <div className="bg-yellow-500/10 rounded-xl p-4 border border-yellow-500/20">
-                    <h5 className="text-sm font-medium text-yellow-300 mb-1">预估价格</h5>
+                    <h5 className="text-sm font-medium text-yellow-300 mb-1">{t('wishModal.price')}</h5>
                     <p className="text-yellow-400 font-medium">{selectedWish.estimated_price}</p>
                   </div>
                 )}
@@ -577,7 +577,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Notes */}
                 {selectedWish.notes && (
                   <div className="bg-purple-500/10 rounded-xl p-4 border border-purple-500/20">
-                    <h5 className="text-sm font-medium text-purple-300 mb-2">备注</h5>
+                    <h5 className="text-sm font-medium text-purple-300 mb-2">{t('wishModal.notes')}</h5>
                     <p className="text-purple-200 italic">"{selectedWish.notes}"</p>
                   </div>
                 )}
@@ -585,7 +585,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 {/* Created date */}
                 <div className="flex items-center space-x-2 text-xs text-gray-400 pt-4 border-t border-white/10">
                   <Calendar className="w-3 h-3" />
-                  <span>创建于 {new Date(selectedWish.created_at).toLocaleDateString('zh-CN', {
+                  <span>{t('wishModal.createdAt')} {new Date(selectedWish.created_at).toLocaleDateString(undefined, {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -601,7 +601,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
                   onClick={closeWishModal}
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-xl transition-all font-medium"
                 >
-                  关闭
+                  {t('wishModal.close')}
                 </button>
               </div>
             </div>

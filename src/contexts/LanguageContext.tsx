@@ -29,6 +29,16 @@ const translations = {
     'landing.feature3.title': '随机惊喜',
     'landing.feature3.desc': '收到星链的特别之人点击链接，可以打开你的星愿盲盒。系统会随机抽取一个愿望显示给他/她，而其他愿望则保持神秘，你也不会知道他/她抽到了哪个愿望。',
 
+    // Wish Details Modal
+    'wishModal.title': '星愿详情',
+    'wishModal.description': '详细描述',
+    'wishModal.tags': '标签',
+    'wishModal.price': '预估价格',
+    'wishModal.notes': '备注',
+    'wishModal.createdAt': '创建于',
+    'wishModal.close': '关闭',
+    'wishModal.clickToView': '点击查看详情',
+
     // Auth
     'auth.signIn': '登录',
     'auth.signUp': '注册',
@@ -165,6 +175,16 @@ const translations = {
     'landing.feature2.desc': 'When you\'re ready to share these wishes, click to generate a star chain. This is an exclusive encrypted link that only the recipient can use to open your star wish blind box.',
     'landing.feature3.title': 'Random Surprise',
     'landing.feature3.desc': 'The special person who receives the star chain can click the link to open your star wish blind box. The system will randomly select one wish to show them, while other wishes remain mysterious, and you won\'t know which one they got.',
+
+    // Wish Details Modal
+    'wishModal.title': 'Wish Details',
+    'wishModal.description': 'Description',
+    'wishModal.tags': 'Tags',
+    'wishModal.price': 'Estimated Price',
+    'wishModal.notes': 'Notes',
+    'wishModal.createdAt': 'Created on',
+    'wishModal.close': 'Close',
+    'wishModal.clickToView': 'Click to view details',
 
     // Auth
     'auth.signIn': 'Sign In',
