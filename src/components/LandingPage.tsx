@@ -258,18 +258,18 @@ const LandingPage: React.FC<LandingPageProps> = ({
     return colors[category]?.[priority] || '#fbbf24';
   };
 
-  // 生成星愿星星分布 - 限制在header下方，title上方的安全区域
+  // 生成星愿星星分布 - 缩小安全区域，限制在更小的范围内
   const generateStarPosition = (index: number, total: number) => {
-    // 定义安全区域：header下方(Y: 15-45%)，避开中心标题区域
+    // 定义更紧凑的安全区域：header下方(Y: 15-35%)，避开中心标题区域
     const safeZones = [
-      // 左上区域
-      { centerX: 25, centerY: 25, radiusX: 20, radiusY: 12, weight: 0.3 },
-      // 右上区域  
-      { centerX: 75, centerY: 25, radiusX: 20, radiusY: 12, weight: 0.3 },
-      // 左侧边缘
-      { centerX: 15, centerY: 35, radiusX: 12, radiusY: 15, weight: 0.2 },
-      // 右侧边缘
-      { centerX: 85, centerY: 35, radiusX: 12, radiusY: 15, weight: 0.2 },
+      // 左上区域 - 缩小范围
+      { centerX: 25, centerY: 22, radiusX: 18, radiusY: 8, weight: 0.3 },
+      // 右上区域 - 缩小范围
+      { centerX: 75, centerY: 22, radiusX: 18, radiusY: 8, weight: 0.3 },
+      // 左侧边缘 - 缩小范围
+      { centerX: 15, centerY: 30, radiusX: 10, radiusY: 10, weight: 0.2 },
+      // 右侧边缘 - 缩小范围
+      { centerX: 85, centerY: 30, radiusX: 10, radiusY: 10, weight: 0.2 },
     ];
 
     // 根据星愿数量和索引选择分布区域
@@ -284,9 +284,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
     let x = zone.centerX + Math.cos(angle) * radiusX;
     let y = zone.centerY + Math.sin(angle) * radiusY;
     
-    // 确保星星在安全区域内，保持边距
+    // 确保星星在安全区域内，保持边距 - 缩小Y轴范围
     x = Math.max(8, Math.min(92, x));
-    y = Math.max(18, Math.min(45, y)); // 限制在header下方，title上方
+    y = Math.max(18, Math.min(35, y)); // 进一步限制在更小的区域
     
     return { x, y };
   };
@@ -397,7 +397,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-8 overflow-hidden">
-      {/* 星愿星空背景 - 限制在安全区域 */}
+      {/* 星愿星空背景 - 限制在更小的安全区域 */}
       <div className="fixed inset-0 pointer-events-none">
         {/* SVG 连线层 */}
         <svg className="absolute inset-0 w-full h-full z-10">
@@ -473,7 +473,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
         ))}
 
         {/* 背景装饰星星（静态，更少更精致） - 减少数量，让画面更简洁 */}
-        {[...Array(8)].map((_, i) => (
+        {[...Array(6)].map((_, i) => (
           <div
             key={`bg-star-${i}`}
             className="absolute animate-pulse"
@@ -493,9 +493,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
         ))}
       </div>
 
-      {/* Main content - 增加顶部间距，避免与星星重叠 */}
-      <div className="text-center max-w-4xl mx-auto relative z-10 w-full" style={{ marginTop: '30vh' }}>
-        {/* Title area - 现在有足够的空间，不会与星星重叠 */}
+      {/* Main content - 减少顶部间距，让内容更靠上 */}
+      <div className="text-center max-w-4xl mx-auto relative z-10 w-full" style={{ marginTop: '15vh' }}>
+        {/* Title area - 现在更靠近顶部 */}
         <div className="mb-6 sm:mb-8 relative">
           {/* 使用统一的Figma设计标题 */}
           <div className="mb-2 sm:mb-4">
