@@ -530,7 +530,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Auth required message for non-authenticated users - 只有在确定未登录时显示 */}
+        {/* Auth required message for non-authenticated users - 移除 auth.signInDescription */}
         {!user && (
           <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
             <div className="mb-4">
@@ -538,9 +538,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 <GlowingDot size={32} color="#FF3EEC" brightness={1} />
               </div>
               <h3 className="text-xl font-bold mb-2 text-white">{t('auth.signInRequired')}</h3>
-              <p className="text-purple-200 text-sm sm:text-base mb-6">
-                {t('auth.signInDescription')}
-              </p>
             </div>
             
             <button
