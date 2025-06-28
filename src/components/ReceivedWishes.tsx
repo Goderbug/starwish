@@ -272,7 +272,7 @@ const ReceivedWishes: React.FC = () => {
                             className="flex items-center space-x-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
                           >
                             <Edit3 className="w-3 h-3" />
-                            <span>编辑</span>
+                            <span>{t('common.edit')}</span>
                           </button>
                         )}
                       </div>
@@ -302,12 +302,12 @@ const ReceivedWishes: React.FC = () => {
                               {isSavingThisNote ? (
                                 <>
                                   <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-                                  <span>保存中...</span>
+                                  <span>{t('common.saving')}</span>
                                 </>
                               ) : (
                                 <>
                                   <Check className="w-3 h-3" />
-                                  <span>确认</span>
+                                  <span>{t('common.confirm')}</span>
                                 </>
                               )}
                             </button>
@@ -318,7 +318,7 @@ const ReceivedWishes: React.FC = () => {
                               className="flex items-center space-x-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600/50 text-white rounded-lg transition-all text-xs font-medium"
                             >
                               <X className="w-3 h-3" />
-                              <span>取消</span>
+                              <span>{t('common.cancel')}</span>
                             </button>
                           </div>
                         </div>

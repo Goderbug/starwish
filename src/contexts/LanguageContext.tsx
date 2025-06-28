@@ -206,6 +206,10 @@ const translations = {
     'common.back': '返回',
     'common.new': '新增',
     'common.close': '关闭',
+    'common.edit': '编辑',
+    'common.confirm': '确认',
+    'common.cancel': '取消',
+    'common.saving': '保存中...',
   },
   en: {
     // Landing Page
@@ -404,6 +408,10 @@ const translations = {
     'common.back': 'Back',
     'common.new': 'New',
     'common.close': 'Close',
+    'common.edit': 'Edit',
+    'common.confirm': 'Confirm',
+    'common.cancel': 'Cancel',
+    'common.saving': 'Saving...',
   }
 };
 
