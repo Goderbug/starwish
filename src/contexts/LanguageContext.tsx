@@ -5,7 +5,7 @@ type SupportedLanguage = 'zh' | 'en';
 interface LanguageContextType {
   language: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, any>) => string;
 }
 
 const translations = {
@@ -88,10 +88,11 @@ const translations = {
     'manager.selected': '已选择',
     'manager.cancel': '取消',
     'manager.weaveChain': '编织星链',
+    'manager.weaving': '正在编织星链',
     'manager.hint': '点击星愿卡片来选择，然后编织成神秘的星链分享给特别的人',
     'manager.noWishes': '还没有星愿哦',
     'manager.plantFirst': '播种第一颗星愿',
-    'manager.weaving': '正在编织星链',
+    'manager.plantFirstDesc': '开始播种你的第一颗星愿吧',
     'manager.weavingDesc': '将星愿连成神秘的星之链',
     'manager.chainComplete': '星链编织完成',
     'manager.shareDesc': '把这条神秘的星链分享给你的那个特别的人吧！',
@@ -101,6 +102,33 @@ const translations = {
     'manager.copyLink': '复制链接',
     'manager.copied': '已复制!',
     'manager.done': '完成',
+    'manager.searchPlaceholder': '搜索星愿...',
+    'manager.filter': '筛选',
+    'manager.wishType': '星愿类型',
+    'manager.all': '全部',
+    'manager.desireLevel': '渴望程度',
+    'manager.sortBy': '排序方式',
+    'manager.sortNewest': '最新创建',
+    'manager.sortOldest': '最早创建',
+    'manager.sortPriorityHigh': '渴望程度高→低',
+    'manager.sortPriorityLow': '渴望程度低→高',
+    'manager.sortTitleAZ': '标题 A→Z',
+    'manager.sortTitleZA': '标题 Z→A',
+    'manager.clearFilters': '清除筛选',
+    'manager.noMatchingWishes': '没有符合条件的星愿',
+    'manager.adjustFilters': '尝试调整筛选条件或清除筛选',
+    'manager.showingResults': '显示 {{current}} / {{total}} 个星愿',
+    'manager.deleteWish': '删除星愿',
+    'manager.confirmDelete': '确认删除星愿',
+    'manager.deleteWarning': '你确定要删除这个星愿吗？此操作无法撤销。',
+    'manager.deleteNote': '删除后，这个星愿将从所有已分享的星链中移除',
+    'manager.deleting': '删除中...',
+    'manager.confirmDeleteButton': '确认删除',
+    'manager.selectWishesFirst': '请选择星愿',
+    'manager.starChain': '星链',
+    'manager.mysterousWishes': '个神秘星愿的星链',
+    'manager.createChainFailed': '创建星链失败，请重试',
+    'manager.addWishesFailed': '添加星愿失败，请重试',
 
     // Blind Box
     'blindbox.title': '星愿盲盒',
@@ -155,6 +183,7 @@ const translations = {
     // Common
     'common.back': '返回',
     'common.new': '新增',
+    'common.close': '关闭',
   },
   en: {
     // Landing Page
@@ -235,10 +264,11 @@ const translations = {
     'manager.selected': 'selected',
     'manager.cancel': 'Cancel',
     'manager.weaveChain': 'Weave Chain',
+    'manager.weaving': 'Weaving star chain',
     'manager.hint': 'Click wish cards to select, then weave them into a mysterious star chain to share with someone special',
     'manager.noWishes': 'No wishes yet',
     'manager.plantFirst': 'Sow Your First Wish',
-    'manager.weaving': 'Weaving star chain',
+    'manager.plantFirstDesc': 'Start sowing your first star wish',
     'manager.weavingDesc': 'Connecting wishes into a mysterious star chain',
     'manager.chainComplete': 'Star Chain Complete',
     'manager.shareDesc': 'Share this mysterious star chain with your special someone!',
@@ -248,6 +278,33 @@ const translations = {
     'manager.copyLink': 'Copy Link',
     'manager.copied': 'Copied!',
     'manager.done': 'Done',
+    'manager.searchPlaceholder': 'Search wishes...',
+    'manager.filter': 'Filter',
+    'manager.wishType': 'Wish Type',
+    'manager.all': 'All',
+    'manager.desireLevel': 'Desire Level',
+    'manager.sortBy': 'Sort By',
+    'manager.sortNewest': 'Newest First',
+    'manager.sortOldest': 'Oldest First',
+    'manager.sortPriorityHigh': 'Priority High→Low',
+    'manager.sortPriorityLow': 'Priority Low→High',
+    'manager.sortTitleAZ': 'Title A→Z',
+    'manager.sortTitleZA': 'Title Z→A',
+    'manager.clearFilters': 'Clear Filters',
+    'manager.noMatchingWishes': 'No matching wishes',
+    'manager.adjustFilters': 'Try adjusting filters or clear filters',
+    'manager.showingResults': 'Showing {{current}} / {{total}} wishes',
+    'manager.deleteWish': 'Delete wish',
+    'manager.confirmDelete': 'Confirm Delete Wish',
+    'manager.deleteWarning': 'Are you sure you want to delete this wish? This action cannot be undone.',
+    'manager.deleteNote': 'After deletion, this wish will be removed from all shared star chains',
+    'manager.deleting': 'Deleting...',
+    'manager.confirmDeleteButton': 'Confirm Delete',
+    'manager.selectWishesFirst': 'Please select wishes',
+    'manager.starChain': 'Star Chain',
+    'manager.mysterousWishes': 'mysterious wishes',
+    'manager.createChainFailed': 'Failed to create star chain, please try again',
+    'manager.addWishesFailed': 'Failed to add wishes, please try again',
 
     // Blind Box
     'blindbox.title': 'Star Wish Blind Box',
@@ -302,6 +359,7 @@ const translations = {
     // Common
     'common.back': 'Back',
     'common.new': 'New',
+    'common.close': 'Close',
   }
 };
 
@@ -328,8 +386,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('starwish-language', lang);
   };
 
-  const t = (key: string): string => {
-    return translations[language][key as keyof typeof translations[typeof language]] || key;
+  const t = (key: string, params?: Record<string, any>): string => {
+    let translation = translations[language][key as keyof typeof translations[typeof language]] || key;
+    
+    // Simple parameter replacement
+    if (params) {
+      Object.keys(params).forEach(param => {
+        translation = translation.replace(new RegExp(`{{${param}}}`, 'g'), params[param]);
+      });
+    }
+    
+    return translation;
   };
 
   return (

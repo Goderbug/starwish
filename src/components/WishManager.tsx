@@ -198,8 +198,8 @@ const WishManager: React.FC<WishManagerProps> = ({
 
   // ✅ 修复：简化按钮文本逻辑
   const getWeaveButtonText = () => {
-    if (isGeneratingLink) return '编织中...';
-    if (selectedWishes.length === 0) return '请选择星愿';
+    if (isGeneratingLink) return t('manager.weaving');
+    if (selectedWishes.length === 0) return t('manager.selectWishesFirst');
     return t('manager.weaveChain');
   };
 
@@ -211,7 +211,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
     // 只检查基本条件
     if (selectedWishes.length === 0) {
-      setError('请先选择要分享的星愿');
+      setError(t('manager.selectWishesFirst'));
       return;
     }
 
@@ -244,8 +244,8 @@ const WishManager: React.FC<WishManagerProps> = ({
           share_code: shareCode,
           is_active: true,
           is_opened: false,
-          name: `星链 ${new Date().toLocaleDateString()}`,
-          description: `包含 ${selectedWishes.length} 个星愿的神秘星链`,
+          name: `${t('manager.starChain')} ${new Date().toLocaleDateString()}`,
+          description: `${t('manager.contains')} ${selectedWishes.length} ${t('manager.mysterousWishes')}`,
           total_opens: 0
         })
         .select()
@@ -253,7 +253,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
       if (chainError) {
         console.error('❌ 创建星链失败:', chainError);
-        throw new Error('创建星链失败，请重试');
+        throw new Error(t('manager.createChainFailed'));
       }
 
       console.log('✅ 星链创建成功:', starChain);
@@ -274,7 +274,7 @@ const WishManager: React.FC<WishManagerProps> = ({
         console.error('❌ 添加星愿到星链失败:', wishError);
         // 回滚：删除已创建的星链
         await supabase.from('star_chains').delete().eq('id', starChain.id);
-        throw new Error('添加星愿失败，请重试');
+        throw new Error(t('manager.addWishesFailed'));
       }
 
       console.log('✅ 星愿添加成功');
@@ -286,11 +286,11 @@ const WishManager: React.FC<WishManagerProps> = ({
       console.log('🎉 星链创建完成:', link);
     } catch (error: any) {
       console.error('❌ 创建星链失败:', error);
-      setError(error.message || '创建星链失败，请重试');
+      setError(error.message || t('manager.createChainFailed'));
     } finally {
       setIsGeneratingLink(false);
     }
-  }, [selectedWishes, isGeneratingLink, wishes]); // 添加wishes依赖
+  }, [selectedWishes, isGeneratingLink, wishes, t]); // 添加wishes依赖
 
   const copyLink = async () => {
     try {
@@ -402,7 +402,7 @@ const WishManager: React.FC<WishManagerProps> = ({
               onClick={() => setError(null)}
               className="mt-2 text-red-300 hover:text-red-200 text-xs"
             >
-              关闭
+              {t('common.close')}
             </button>
           </div>
         )}
@@ -415,7 +415,7 @@ const WishManager: React.FC<WishManagerProps> = ({
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="搜索星愿..."
+                placeholder={t('manager.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-10 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 transition-all text-sm"
@@ -440,7 +440,7 @@ const WishManager: React.FC<WishManagerProps> = ({
               }`}
             >
               <Filter className="w-4 h-4" />
-              <span className="hidden sm:inline">筛选</span>
+              <span className="hidden sm:inline">{t('manager.filter')}</span>
               {hasActiveFilters && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-purple-400 rounded-full"></div>
               )}
@@ -468,10 +468,10 @@ const WishManager: React.FC<WishManagerProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {/* 星愿类型筛选 */}
                 <div>
-                  <h4 className="text-xs font-medium text-gray-300 mb-2">星愿类型</h4>
+                  <h4 className="text-xs font-medium text-gray-300 mb-2">{t('manager.wishType')}</h4>
                   <div className="flex flex-wrap gap-1">
                     {[
-                      { value: 'all', label: '全部', count: filterStats.all },
+                      { value: 'all', label: t('manager.all'), count: filterStats.all },
                       { value: 'gift', label: t('category.gift'), count: filterStats.gift },
                       { value: 'experience', label: t('category.experience'), count: filterStats.experience },
                       { value: 'moment', label: t('category.moment'), count: filterStats.moment },
@@ -493,10 +493,10 @@ const WishManager: React.FC<WishManagerProps> = ({
 
                 {/* 渴望程度筛选 */}
                 <div>
-                  <h4 className="text-xs font-medium text-gray-300 mb-2">渴望程度</h4>
+                  <h4 className="text-xs font-medium text-gray-300 mb-2">{t('manager.desireLevel')}</h4>
                   <div className="flex flex-wrap gap-1">
                     {[
-                      { value: 'all', label: '全部', count: filterStats.all },
+                      { value: 'all', label: t('manager.all'), count: filterStats.all },
                       { value: 'high', label: t('priority.high'), count: filterStats.high },
                       { value: 'medium', label: t('priority.medium'), count: filterStats.medium },
                       { value: 'low', label: t('priority.low'), count: filterStats.low },
@@ -518,18 +518,18 @@ const WishManager: React.FC<WishManagerProps> = ({
 
                 {/* 排序选项 */}
                 <div>
-                  <h4 className="text-xs font-medium text-gray-300 mb-2">排序方式</h4>
+                  <h4 className="text-xs font-medium text-gray-300 mb-2">{t('manager.sortBy')}</h4>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
                     className="w-full px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-white text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-400/20"
                   >
-                    <option value="newest">最新创建</option>
-                    <option value="oldest">最早创建</option>
-                    <option value="priority-high">渴望程度高→低</option>
-                    <option value="priority-low">渴望程度低→高</option>
-                    <option value="title-az">标题 A→Z</option>
-                    <option value="title-za">标题 Z→A</option>
+                    <option value="newest">{t('manager.sortNewest')}</option>
+                    <option value="oldest">{t('manager.sortOldest')}</option>
+                    <option value="priority-high">{t('manager.sortPriorityHigh')}</option>
+                    <option value="priority-low">{t('manager.sortPriorityLow')}</option>
+                    <option value="title-az">{t('manager.sortTitleAZ')}</option>
+                    <option value="title-za">{t('manager.sortTitleZA')}</option>
                   </select>
                 </div>
               </div>
@@ -542,7 +542,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                     className="flex items-center space-x-1 px-3 py-1 bg-gray-600/50 hover:bg-gray-600/70 text-gray-300 rounded-lg transition-all text-xs"
                   >
                     <X className="w-3 h-3" />
-                    <span>清除筛选</span>
+                    <span>{t('manager.clearFilters')}</span>
                   </button>
                 </div>
               )}
@@ -552,12 +552,12 @@ const WishManager: React.FC<WishManagerProps> = ({
           {/* 筛选结果提示 */}
           {hasActiveFilters && (
             <div className="mt-3 flex items-center justify-between text-xs text-blue-300">
-              <span>显示 {filteredAndSortedWishes.length} / {wishes.length} 个星愿</span>
+              <span>{t('manager.showingResults', { current: filteredAndSortedWishes.length, total: wishes.length })}</span>
               <button
                 onClick={clearAllFilters}
                 className="text-blue-400 hover:text-blue-300 underline"
               >
-                清除筛选
+                {t('manager.clearFilters')}
               </button>
             </div>
           )}
@@ -574,17 +574,17 @@ const WishManager: React.FC<WishManagerProps> = ({
               )}
             </div>
             <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-300">
-              {hasActiveFilters ? '没有符合条件的星愿' : t('manager.noWishes')}
+              {hasActiveFilters ? t('manager.noMatchingWishes') : t('manager.noWishes')}
             </h3>
             <p className="text-gray-400 mb-6">
-              {hasActiveFilters ? '尝试调整筛选条件或清除筛选' : '开始播种你的第一颗星愿吧'}
+              {hasActiveFilters ? t('manager.adjustFilters') : t('manager.plantFirstDesc')}
             </p>
             {hasActiveFilters ? (
               <button
                 onClick={clearAllFilters}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
               >
-                清除筛选条件
+                {t('manager.clearFilters')}
               </button>
             ) : (
               <button
@@ -684,7 +684,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                       <button
                         onClick={(e) => handleDeleteClick(e, wish)}
                         className="p-2 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors touch-manipulation opacity-0 group-hover:opacity-100"
-                        title="删除星愿"
+                        title={t('manager.deleteWish')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -725,10 +725,10 @@ const WishManager: React.FC<WishManagerProps> = ({
                     <Trash2 className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl sm:text-2xl font-bold mb-2 text-white">
-                    确认删除星愿
+                    {t('manager.confirmDelete')}
                   </h3>
                   <p className="text-gray-300 text-center text-sm sm:text-base">
-                    你确定要删除这个星愿吗？此操作无法撤销。
+                    {t('manager.deleteWarning')}
                   </p>
                 </div>
                 
@@ -748,7 +748,7 @@ const WishManager: React.FC<WishManagerProps> = ({
 
                 <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
                   <p className="text-red-400 text-sm text-center">
-                    ⚠️ 删除后，这个星愿将从所有已分享的星链中移除
+                    ⚠️ {t('manager.deleteNote')}
                   </p>
                 </div>
 
@@ -758,7 +758,7 @@ const WishManager: React.FC<WishManagerProps> = ({
                     disabled={isDeleting}
                     className="flex-1 bg-white/10 hover:bg-white/20 text-white py-3 sm:py-4 rounded-xl transition-colors touch-manipulation disabled:opacity-50"
                   >
-                    取消
+                    {t('manager.cancel')}
                   </button>
                   <button
                     onClick={confirmDelete}
@@ -768,12 +768,12 @@ const WishManager: React.FC<WishManagerProps> = ({
                     {isDeleting ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>删除中...</span>
+                        <span>{t('manager.deleting')}</span>
                       </>
                     ) : (
                       <>
                         <Trash2 className="w-4 h-4" />
-                        <span>确认删除</span>
+                        <span>{t('manager.confirmDeleteButton')}</span>
                       </>
                     )}
                   </button>
