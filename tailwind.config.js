@@ -7,13 +7,13 @@ export default {
         'sans': ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
       fontSize: {
-        'xs': ['0.75rem', { lineHeight: '1.5' }],
-        'sm': ['0.875rem', { lineHeight: '1.5' }],
-        'base': ['1rem', { lineHeight: '1.5' }],
-        'lg': ['1.125rem', { lineHeight: '1.5' }],
-        'xl': ['1.25rem', { lineHeight: '1.4' }],
-        '2xl': ['1.5rem', { lineHeight: '1.3' }],
-        '3xl': ['1.875rem', { lineHeight: '1.2' }],
+        'xs': ['0.75rem', { lineHeight: '1.6' }],
+        'sm': ['0.875rem', { lineHeight: '1.6' }],
+        'base': ['1rem', { lineHeight: '1.6' }],
+        'lg': ['1.125rem', { lineHeight: '1.6' }],
+        'xl': ['1.25rem', { lineHeight: '1.5' }],
+        '2xl': ['1.5rem', { lineHeight: '1.4' }],
+        '3xl': ['1.875rem', { lineHeight: '1.3' }],
         '4xl': ['2.25rem', { lineHeight: '1.2' }],
         '5xl': ['3rem', { lineHeight: '1.1' }],
         '6xl': ['3.75rem', { lineHeight: '1.1' }],
@@ -45,6 +45,10 @@ export default {
           'pink': '#ec4899',
           'blue': '#3b82f6',
         }
+      },
+      letterSpacing: {
+        'wider': '0.05em',
+        'widest': '0.1em',
       }
     },
   },

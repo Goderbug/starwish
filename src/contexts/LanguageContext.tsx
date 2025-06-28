@@ -23,11 +23,11 @@ const translations = {
     'landing.signIn': '登录',
     'landing.signOut': '退出登录',
     'landing.feature1.title': '播种星愿',
-    'landing.feature1.desc': '创建属于你的星愿清单，记录那些或大或小的愿望。可以是一次特别的旅行，一本心仪的书籍，或是一顿简单的晚餐。每一个愿望都是一颗独特的星星。',
+    'landing.feature1.desc': '创建你的愿望清单，无论大小。一场旅行、一本文集，或一顿晚餐，每个愿望都是一颗闪耀的星星。',
     'landing.feature2.title': '编织星链',
-    'landing.feature2.desc': '当你准备好分享这些愿望时，点击生成星链。这是一条专属的加密链接，只有收到链接的人才能打开你的星愿盲盒。',
+    'landing.feature2.desc': '准备好分享了吗？生成星链，一条专属加密链接，只有你选中的人才能打开。',
     'landing.feature3.title': '随机惊喜',
-    'landing.feature3.desc': '收到星链的特别之人点击链接，可以打开你的星愿盲盒。系统会随机抽取一个愿望显示给他/她，而其他愿望则保持神秘，你也不会知道他/她抽到了哪个愿望。',
+    'landing.feature3.desc': '对方点击后，系统会随机展示一个愿望。其余将继续保密，你也无法知道他们看到了哪一个。',
 
     // Wish Details Modal
     'wishModal.title': '星愿详情',
@@ -226,11 +226,11 @@ const translations = {
     'landing.signIn': 'Sign In',
     'landing.signOut': 'Sign Out',
     'landing.feature1.title': 'Sow Star Wishes',
-    'landing.feature1.desc': 'Create your own wish list and record those big and small desires. It could be a special trip, a favorite book, or a simple dinner. Each wish is a unique star.',
+    'landing.feature1.desc': 'Create your own wish list—big or small. A dream trip, a favorite book, or a simple dinner—each wish is a shining star.',
     'landing.feature2.title': 'Weave Star Chain',
-    'landing.feature2.desc': 'When you\'re ready to share these wishes, click to generate a star chain. This is an exclusive encrypted link that only the recipient can use to open your star wish blind box.',
+    'landing.feature2.desc': 'Ready to share? Generate a star chain—an exclusive, encrypted link only your chosen one can open.',
     'landing.feature3.title': 'Random Surprise',
-    'landing.feature3.desc': 'The special person who receives the star chain can click the link to open your star wish blind box. The system will randomly select one wish to show them, while other wishes remain mysterious, and you won\'t know which one they got.',
+    'landing.feature3.desc': 'When they click the link, one random wish is revealed. The rest stay hidden. You won\'t know which one they saw.',
 
     // Wish Details Modal
     'wishModal.title': 'Wish Details',
