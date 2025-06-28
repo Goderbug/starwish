@@ -596,80 +596,86 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Features showcase - 重新设计的功能卡片，采用更简洁的排版 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12 px-2 max-w-6xl mx-auto">
-          {/* 播种星愿 */}
+        {/* Features showcase - 重新设计为移动端优先的布局 */}
+        <div className="space-y-8 sm:space-y-12 px-2 max-w-5xl mx-auto">
+          {/* 播种星愿 - 左对齐布局 */}
           <div className="group relative">
-            {/* 背景装饰 */}
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-orange-500/3 to-transparent rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-            
-            <div className="relative bg-white/3 backdrop-blur-sm rounded-3xl p-8 sm:p-12 border border-white/8 hover:border-white/15 transition-all duration-500 group-hover:bg-white/5 group-hover:scale-[1.02]">
-              {/* 插图 */}
-              <FeatureIllustration type="sow" className="mb-8" />
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12">
+              {/* 插图 - 移动端在上方，桌面端在左侧 */}
+              <div className="flex-shrink-0 order-1 lg:order-1">
+                <div className="relative">
+                  {/* 背景装饰 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-orange-500/5 to-transparent rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 scale-150"></div>
+                  
+                  <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-yellow-400/30 transition-all duration-500 group-hover:bg-white/8">
+                    <FeatureIllustration type="sow" />
+                  </div>
+                </div>
+              </div>
               
-              {/* 内容 */}
-              <div className="text-center space-y-6">
-                <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4 group-hover:text-yellow-300 transition-colors duration-300 leading-tight">
+              {/* 内容 - 移动端在下方，桌面端在右侧 */}
+              <div className="flex-1 text-center lg:text-left order-2 lg:order-2 space-y-4 lg:space-y-6">
+                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white group-hover:text-yellow-300 transition-colors duration-300 leading-tight tracking-tight">
                   {t('landing.feature1.title')}
                 </h3>
-                <p className="text-gray-300 text-base sm:text-lg leading-relaxed font-light tracking-wide">
+                <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-normal tracking-wide max-w-2xl mx-auto lg:mx-0">
                   {t('landing.feature1.desc')}
                 </p>
               </div>
-              
-              {/* 装饰元素 */}
-              <div className="absolute top-6 right-6 w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse opacity-60"></div>
-              <div className="absolute bottom-8 left-8 w-1 h-1 bg-orange-400 rounded-full animate-ping opacity-40"></div>
             </div>
           </div>
 
-          {/* 编织星链 */}
+          {/* 编织星链 - 右对齐布局 */}
           <div className="group relative">
-            {/* 背景装饰 */}
-            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/3 to-transparent rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-            
-            <div className="relative bg-white/3 backdrop-blur-sm rounded-3xl p-8 sm:p-12 border border-white/8 hover:border-white/15 transition-all duration-500 group-hover:bg-white/5 group-hover:scale-[1.02]">
-              {/* 插图 */}
-              <FeatureIllustration type="weave" className="mb-8" />
+            <div className="flex flex-col lg:flex-row-reverse items-center lg:items-start gap-8 lg:gap-12">
+              {/* 插图 - 移动端在上方，桌面端在右侧 */}
+              <div className="flex-shrink-0 order-1 lg:order-1">
+                <div className="relative">
+                  {/* 背景装饰 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 scale-150"></div>
+                  
+                  <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-purple-400/30 transition-all duration-500 group-hover:bg-white/8">
+                    <FeatureIllustration type="weave" />
+                  </div>
+                </div>
+              </div>
               
-              {/* 内容 */}
-              <div className="text-center space-y-6">
-                <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4 group-hover:text-purple-300 transition-colors duration-300 leading-tight">
+              {/* 内容 - 移动端在下方，桌面端在左侧 */}
+              <div className="flex-1 text-center lg:text-right order-2 lg:order-2 space-y-4 lg:space-y-6">
+                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white group-hover:text-purple-300 transition-colors duration-300 leading-tight tracking-tight">
                   {t('landing.feature2.title')}
                 </h3>
-                <p className="text-gray-300 text-base sm:text-lg leading-relaxed font-light tracking-wide">
+                <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-normal tracking-wide max-w-2xl mx-auto lg:mx-0 lg:ml-auto">
                   {t('landing.feature2.desc')}
                 </p>
               </div>
-              
-              {/* 装饰元素 */}
-              <div className="absolute top-6 right-6 w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse opacity-60"></div>
-              <div className="absolute bottom-8 left-8 w-1 h-1 bg-pink-400 rounded-full animate-ping opacity-40"></div>
             </div>
           </div>
 
-          {/* 随机惊喜 */}
+          {/* 随机惊喜 - 左对齐布局 */}
           <div className="group relative">
-            {/* 背景装饰 */}
-            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-blue-500/3 to-transparent rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-            
-            <div className="relative bg-white/3 backdrop-blur-sm rounded-3xl p-8 sm:p-12 border border-white/8 hover:border-white/15 transition-all duration-500 group-hover:bg-white/5 group-hover:scale-[1.02]">
-              {/* 插图 */}
-              <FeatureIllustration type="surprise" className="mb-8" />
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12">
+              {/* 插图 - 移动端在上方，桌面端在左侧 */}
+              <div className="flex-shrink-0 order-1 lg:order-1">
+                <div className="relative">
+                  {/* 背景装饰 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-blue-500/5 to-transparent rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 scale-150"></div>
+                  
+                  <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-pink-400/30 transition-all duration-500 group-hover:bg-white/8">
+                    <FeatureIllustration type="surprise" />
+                  </div>
+                </div>
+              </div>
               
-              {/* 内容 */}
-              <div className="text-center space-y-6">
-                <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4 group-hover:text-pink-300 transition-colors duration-300 leading-tight">
+              {/* 内容 - 移动端在下方，桌面端在右侧 */}
+              <div className="flex-1 text-center lg:text-left order-2 lg:order-2 space-y-4 lg:space-y-6">
+                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white group-hover:text-pink-300 transition-colors duration-300 leading-tight tracking-tight">
                   {t('landing.feature3.title')}
                 </h3>
-                <p className="text-gray-300 text-base sm:text-lg leading-relaxed font-light tracking-wide">
+                <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-normal tracking-wide max-w-2xl mx-auto lg:mx-0">
                   {t('landing.feature3.desc')}
                 </p>
               </div>
-              
-              {/* 装饰元素 */}
-              <div className="absolute top-6 right-6 w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse opacity-60"></div>
-              <div className="absolute bottom-8 left-8 w-1 h-1 bg-blue-400 rounded-full animate-ping opacity-40"></div>
             </div>
           </div>
         </div>
