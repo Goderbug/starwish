@@ -83,17 +83,17 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
       return (
         <div className={`relative ${className}`}>
           {/* 播种星愿插图 */}
-          <div className="relative w-20 h-20 mx-auto">
+          <div className="relative w-24 h-24 mx-auto">
             {/* 中心星星 */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-pulse">
-              <Sparkles className="w-3 h-3 text-white" fill="currentColor" />
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-pulse">
+              <Sparkles className="w-4 h-4 text-white" fill="currentColor" />
             </div>
             
             {/* 围绕的小星星 */}
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-1.5 h-1.5 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-twinkle"
+                className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-twinkle"
                 style={{
                   left: `${50 + 35 * Math.cos((i * 60) * Math.PI / 180)}%`,
                   top: `${50 + 35 * Math.sin((i * 60) * Math.PI / 180)}%`,
@@ -104,7 +104,7 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
             ))}
             
             {/* 魔法粒子 */}
-            {[...Array(8)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
               <div
                 key={`particle-${i}`}
                 className="absolute w-0.5 h-0.5 bg-yellow-300 rounded-full animate-float opacity-60"
@@ -124,17 +124,17 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
       return (
         <div className={`relative ${className}`}>
           {/* 编织星链插图 */}
-          <div className="relative w-20 h-20 mx-auto">
+          <div className="relative w-24 h-24 mx-auto">
             {/* 连接的星星 */}
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 80 80">
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 96 96">
               {/* 连线 */}
               <path
-                d="M16 24 L36 16 L56 28 L40 48 L20 44 Z"
+                d="M20 30 L40 20 L60 35 L45 55 L25 50 Z"
                 stroke="url(#chainGradient)"
-                strokeWidth="1.5"
+                strokeWidth="2"
                 fill="none"
                 className="animate-pulse"
-                strokeDasharray="3,1.5"
+                strokeDasharray="4,2"
               />
               <defs>
                 <linearGradient id="chainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -147,15 +147,15 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
             
             {/* 星星节点 */}
             {[
-              { x: 16, y: 24 },
-              { x: 36, y: 16 },
-              { x: 56, y: 28 },
-              { x: 40, y: 48 },
-              { x: 20, y: 44 }
+              { x: 20, y: 30 },
+              { x: 40, y: 20 },
+              { x: 60, y: 35 },
+              { x: 45, y: 55 },
+              { x: 25, y: 50 }
             ].map((pos, i) => (
               <div
                 key={i}
-                className="absolute w-2 h-2 rounded-full animate-pulse"
+                className="absolute w-3 h-3 rounded-full animate-pulse"
                 style={{
                   left: `${pos.x}%`,
                   top: `${pos.y}%`,
@@ -167,8 +167,8 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
             ))}
             
             {/* 中心链接图标 */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
-              <Link className="w-2.5 h-2.5 text-white" />
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
+              <Link className="w-3 h-3 text-white" />
             </div>
           </div>
         </div>
@@ -178,20 +178,20 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
       return (
         <div className={`relative ${className}`}>
           {/* 随机惊喜插图 */}
-          <div className="relative w-20 h-20 mx-auto">
+          <div className="relative w-24 h-24 mx-auto">
             {/* 盲盒 */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
-              <Gift className="w-5 h-5 text-yellow-400" />
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
+              <Gift className="w-6 h-6 text-yellow-400" />
             </div>
             
             {/* 问号和惊喜元素 */}
             {['?', '!', '✨'].map((symbol, i) => (
               <div
                 key={i}
-                className="absolute text-sm font-bold text-yellow-400 animate-bounce"
+                className="absolute text-lg font-bold text-yellow-400 animate-bounce"
                 style={{
-                  left: `${30 + i * 20}%`,
-                  top: `${20 + (i % 2) * 15}%`,
+                  left: `${25 + i * 25}%`,
+                  top: `${15 + (i % 2) * 20}%`,
                   animationDelay: `${i * 0.5}s`,
                 }}
               >
@@ -200,17 +200,17 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
             ))}
             
             {/* 流星轨迹 */}
-            <div className="absolute top-2 right-2 w-6 h-0.5 bg-gradient-to-r from-yellow-400 to-transparent rounded-full animate-pulse opacity-70" />
-            <div className="absolute bottom-4 left-2 w-4 h-0.5 bg-gradient-to-r from-pink-400 to-transparent rounded-full animate-pulse opacity-70" style={{ animationDelay: '0.5s' }} />
+            <div className="absolute top-3 right-3 w-8 h-0.5 bg-gradient-to-r from-yellow-400 to-transparent rounded-full animate-pulse opacity-70" />
+            <div className="absolute bottom-5 left-3 w-6 h-0.5 bg-gradient-to-r from-pink-400 to-transparent rounded-full animate-pulse opacity-70" style={{ animationDelay: '0.5s' }} />
             
             {/* 环绕粒子 */}
-            {[...Array(6)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div
                 key={`surprise-particle-${i}`}
                 className="absolute w-0.5 h-0.5 bg-yellow-300 rounded-full animate-ping"
                 style={{
-                  left: `${50 + 40 * Math.cos((i * 60) * Math.PI / 180)}%`,
-                  top: `${50 + 40 * Math.sin((i * 60) * Math.PI / 180)}%`,
+                  left: `${50 + 40 * Math.cos((i * 45) * Math.PI / 180)}%`,
+                  top: `${50 + 40 * Math.sin((i * 45) * Math.PI / 180)}%`,
                   animationDelay: `${i * 0.3}s`,
                   transform: 'translate(-50%, -50%)',
                 }}
@@ -596,85 +596,112 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Features showcase - 重新设计为移动端优先的布局 */}
-        <div className="space-y-8 sm:space-y-12 px-2 max-w-5xl mx-auto">
-          {/* 播种星愿 - 左对齐布局 */}
+        {/* Features showcase - 重新设计为卡片布局 */}
+        <div className="space-y-8 sm:space-y-12 px-2 max-w-6xl mx-auto">
+          {/* 播种星愿卡片 */}
           <div className="group relative">
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12">
-              {/* 插图 - 移动端在上方，桌面端在左侧 */}
-              <div className="flex-shrink-0 order-1 lg:order-1">
-                <div className="relative">
-                  {/* 背景装饰 */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-orange-500/5 to-transparent rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 scale-150"></div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 sm:p-10 border border-white/10 hover:border-yellow-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card">
+              {/* 背景装饰 */}
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-orange-500/3 to-transparent rounded-3xl"></div>
+              
+              <div className="relative z-10 flex flex-col lg:flex-row items-start gap-8">
+                {/* 左侧：标题frame和描述 */}
+                <div className="flex-1 space-y-6">
+                  {/* 标题frame */}
+                  <div className="inline-flex items-center space-x-3 bg-black/40 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
+                    <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center">
+                      <Wand2 className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">
+                      {t('landing.feature1.title')}
+                    </h3>
+                  </div>
                   
-                  <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-yellow-400/30 transition-all duration-500 group-hover:bg-white/8">
-                    <FeatureIllustration type="sow" />
+                  {/* 描述文本 - 左对齐，字号比标题大20% */}
+                  <p className="text-gray-300 text-xl sm:text-2xl lg:text-3xl leading-relaxed font-medium text-left max-w-2xl">
+                    {t('landing.feature1.desc')}
+                  </p>
+                </div>
+                
+                {/* 右侧：示意动画 */}
+                <div className="flex-shrink-0 lg:w-48 lg:h-48 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-orange-500/10 rounded-3xl blur-2xl scale-150"></div>
+                    <FeatureIllustration type="sow" className="relative z-10" />
                   </div>
                 </div>
-              </div>
-              
-              {/* 内容 - 移动端在下方，桌面端在右侧 */}
-              <div className="flex-1 text-center lg:text-left order-2 lg:order-2 space-y-4 lg:space-y-6">
-                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white group-hover:text-yellow-300 transition-colors duration-300 leading-tight tracking-tight">
-                  {t('landing.feature1.title')}
-                </h3>
-                <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-normal tracking-wide max-w-2xl mx-auto lg:mx-0">
-                  {t('landing.feature1.desc')}
-                </p>
               </div>
             </div>
           </div>
 
-          {/* 编织星链 - 右对齐布局 */}
+          {/* 编织星链卡片 */}
           <div className="group relative">
-            <div className="flex flex-col lg:flex-row-reverse items-center lg:items-start gap-8 lg:gap-12">
-              {/* 插图 - 移动端在上方，桌面端在右侧 */}
-              <div className="flex-shrink-0 order-1 lg:order-1">
-                <div className="relative">
-                  {/* 背景装饰 */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 scale-150"></div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 sm:p-10 border border-white/10 hover:border-purple-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card">
+              {/* 背景装饰 */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/3 to-transparent rounded-3xl"></div>
+              
+              <div className="relative z-10 flex flex-col lg:flex-row items-start gap-8">
+                {/* 左侧：标题frame和描述 */}
+                <div className="flex-1 space-y-6">
+                  {/* 标题frame */}
+                  <div className="inline-flex items-center space-x-3 bg-black/40 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
+                      <Link className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">
+                      {t('landing.feature2.title')}
+                    </h3>
+                  </div>
                   
-                  <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-purple-400/30 transition-all duration-500 group-hover:bg-white/8">
-                    <FeatureIllustration type="weave" />
+                  {/* 描述文本 - 左对齐，字号比标题大20% */}
+                  <p className="text-gray-300 text-xl sm:text-2xl lg:text-3xl leading-relaxed font-medium text-left max-w-2xl">
+                    {t('landing.feature2.desc')}
+                  </p>
+                </div>
+                
+                {/* 右侧：示意动画 */}
+                <div className="flex-shrink-0 lg:w-48 lg:h-48 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-3xl blur-2xl scale-150"></div>
+                    <FeatureIllustration type="weave" className="relative z-10" />
                   </div>
                 </div>
-              </div>
-              
-              {/* 内容 - 移动端在下方，桌面端在左侧 */}
-              <div className="flex-1 text-center lg:text-right order-2 lg:order-2 space-y-4 lg:space-y-6">
-                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white group-hover:text-purple-300 transition-colors duration-300 leading-tight tracking-tight">
-                  {t('landing.feature2.title')}
-                </h3>
-                <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-normal tracking-wide max-w-2xl mx-auto lg:mx-0 lg:ml-auto">
-                  {t('landing.feature2.desc')}
-                </p>
               </div>
             </div>
           </div>
 
-          {/* 随机惊喜 - 左对齐布局 */}
+          {/* 随机惊喜卡片 */}
           <div className="group relative">
-            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12">
-              {/* 插图 - 移动端在上方，桌面端在左侧 */}
-              <div className="flex-shrink-0 order-1 lg:order-1">
-                <div className="relative">
-                  {/* 背景装饰 */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-blue-500/5 to-transparent rounded-3xl blur-2xl group-hover:blur-3xl transition-all duration-500 scale-150"></div>
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-8 sm:p-10 border border-white/10 hover:border-pink-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card">
+              {/* 背景装饰 */}
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-blue-500/3 to-transparent rounded-3xl"></div>
+              
+              <div className="relative z-10 flex flex-col lg:flex-row items-start gap-8">
+                {/* 左侧：标题frame和描述 */}
+                <div className="flex-1 space-y-6">
+                  {/* 标题frame */}
+                  <div className="inline-flex items-center space-x-3 bg-black/40 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/20">
+                    <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-blue-400 rounded-full flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-white">
+                      {t('landing.feature3.title')}
+                    </h3>
+                  </div>
                   
-                  <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10 hover:border-pink-400/30 transition-all duration-500 group-hover:bg-white/8">
-                    <FeatureIllustration type="surprise" />
+                  {/* 描述文本 - 左对齐，字号比标题大20% */}
+                  <p className="text-gray-300 text-xl sm:text-2xl lg:text-3xl leading-relaxed font-medium text-left max-w-2xl">
+                    {t('landing.feature3.desc')}
+                  </p>
+                </div>
+                
+                {/* 右侧：示意动画 */}
+                <div className="flex-shrink-0 lg:w-48 lg:h-48 flex items-center justify-center">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-blue-500/10 rounded-3xl blur-2xl scale-150"></div>
+                    <FeatureIllustration type="surprise" className="relative z-10" />
                   </div>
                 </div>
-              </div>
-              
-              {/* 内容 - 移动端在下方，桌面端在右侧 */}
-              <div className="flex-1 text-center lg:text-left order-2 lg:order-2 space-y-4 lg:space-y-6">
-                <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white group-hover:text-pink-300 transition-colors duration-300 leading-tight tracking-tight">
-                  {t('landing.feature3.title')}
-                </h3>
-                <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-normal tracking-wide max-w-2xl mx-auto lg:mx-0">
-                  {t('landing.feature3.desc')}
-                </p>
               </div>
             </div>
           </div>
