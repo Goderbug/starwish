@@ -226,7 +226,7 @@ const translations = {
     'landing.signIn': 'Sign In',
     'landing.signOut': 'Sign Out',
     'landing.feature1.title': 'Sow Star Wishes',
-    'landing.feature1.desc': 'Create your own wish list—big or small. A dream trip, a favorite book, or a simple dinner—each wish is a shining star.',
+    'landing.feature1.desc': 'Create your own wish list. A dream trip, a favorite book, or a simple dinner—each wish is a shining star.',
     'landing.feature2.title': 'Weave Star Chain',
     'landing.feature2.desc': 'Ready to share? Generate a star chain—an exclusive, encrypted link only your chosen one can open.',
     'landing.feature3.title': 'Random Surprise',
