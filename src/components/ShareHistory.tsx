@@ -198,14 +198,14 @@ const ShareHistory: React.FC = () => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 1) {
-      return '今天';
+      return t('shareHistory.today');
     } else if (diffDays <= 7) {
-      return `${diffDays}天前`;
+      return t('shareHistory.daysAgo', { days: diffDays });
     } else if (diffDays <= 30) {
       const weeks = Math.floor(diffDays / 7);
-      return `${weeks}周前`;
+      return t('shareHistory.weeksAgo', { weeks });
     } else {
-      return date.toLocaleDateString('zh-CN', {
+      return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric'
       });
@@ -226,7 +226,7 @@ const ShareHistory: React.FC = () => {
   const getOpenStatus = (chain: StarChain) => {
     if (chain.is_opened) {
       return {
-        text: '已开启',
+        text: t('shareHistory.opened'),
         icon: CheckCircle,
         color: 'text-green-400',
         bgColor: 'bg-green-500/20',
@@ -234,7 +234,7 @@ const ShareHistory: React.FC = () => {
       };
     } else {
       return {
-        text: '未开启',
+        text: t('shareHistory.unopened'),
         icon: XCircle,
         color: 'text-blue-400',
         bgColor: 'bg-blue-500/20',
@@ -266,7 +266,7 @@ const ShareHistory: React.FC = () => {
               {/* ✅ 实时状态提示 */}
               <div className="flex items-center space-x-2 mt-2">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-400">实时监听状态变化</span>
+                <span className="text-xs text-green-400">{t('shareHistory.realtimeMonitoring')}</span>
               </div>
             </div>
             
@@ -280,10 +280,10 @@ const ShareHistory: React.FC = () => {
                     ? 'bg-gray-600/50 text-gray-400 cursor-not-allowed'
                     : 'bg-white/10 hover:bg-white/20 text-white'
                 }`}
-                title="刷新状态"
+                title={t('shareHistory.refreshStatus')}
               >
                 <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                <span className="text-sm">{refreshing ? '刷新中...' : '刷新'}</span>
+                <span className="text-sm">{refreshing ? t('shareHistory.refreshing') : t('shareHistory.refresh')}</span>
               </button>
 
               {/* Filter Tabs */}
@@ -297,7 +297,7 @@ const ShareHistory: React.FC = () => {
                         : 'text-gray-400 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    <span>全部</span>
+                    <span>{t('shareHistory.all')}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
                       activeFilter === 'all' ? 'bg-white/20' : 'bg-white/10'
                     }`}>
@@ -314,7 +314,7 @@ const ShareHistory: React.FC = () => {
                     }`}
                   >
                     <XCircle className="w-3 h-3" />
-                    <span>未开启</span>
+                    <span>{t('shareHistory.unopened')}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
                       activeFilter === 'unopened' ? 'bg-blue-500/20' : 'bg-white/10'
                     }`}>
@@ -331,7 +331,7 @@ const ShareHistory: React.FC = () => {
                     }`}
                   >
                     <CheckCircle className="w-3 h-3" />
-                    <span>已开启</span>
+                    <span>{t('shareHistory.opened')}</span>
                     <span className={`px-2 py-0.5 rounded-full text-xs ${
                       activeFilter === 'opened' ? 'bg-green-500/20' : 'bg-white/10'
                     }`}>
@@ -363,19 +363,19 @@ const ShareHistory: React.FC = () => {
               )}
             </div>
             <h3 className="text-lg font-semibold mb-2 text-gray-300">
-              {activeFilter === 'opened' ? '暂无已开启的星链' : '暂无未开启的星链'}
+              {activeFilter === 'opened' ? t('shareHistory.noOpenedChains') : t('shareHistory.noUnopenedChains')}
             </h3>
             <p className="text-gray-400 mb-6">
               {activeFilter === 'opened' 
-                ? '还没有星链被开启过' 
-                : '所有星链都已经被开启了'
+                ? t('shareHistory.noOpenedChainsDesc')
+                : t('shareHistory.noUnopenedChainsDesc')
               }
             </p>
             <button
               onClick={() => setActiveFilter('all')}
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 rounded-xl transition-all"
             >
-              查看全部
+              {t('shareHistory.viewAll')}
             </button>
           </div>
         ) : (
@@ -384,8 +384,10 @@ const ShareHistory: React.FC = () => {
             {activeFilter !== 'all' && (
               <div className="text-center py-2">
                 <p className="text-sm text-gray-400">
-                  显示 {filteredStarChains.length} 个
-                  {activeFilter === 'opened' ? '已开启' : '未开启'}的星链
+                  {t('shareHistory.showingFiltered', { 
+                    count: filteredStarChains.length,
+                    type: activeFilter === 'opened' ? t('shareHistory.opened') : t('shareHistory.unopened')
+                  })}
                 </p>
               </div>
             )}
@@ -441,7 +443,7 @@ const ShareHistory: React.FC = () => {
                       <button
                         onClick={() => checkChainStatus(chain.id)}
                         className="p-1 text-gray-400 hover:text-white transition-colors"
-                        title="检查最新状态"
+                        title={t('shareHistory.checkLatestStatus')}
                       >
                         <RefreshCw className="w-3 h-3" />
                       </button>
@@ -457,7 +459,7 @@ const ShareHistory: React.FC = () => {
                       <div className={`text-2xl font-bold mb-1 transition-all duration-500 ${openStatus.color}`}>
                         {chain.is_opened ? '✓' : '○'}
                       </div>
-                      <div className="text-xs text-gray-400">开启状态</div>
+                      <div className="text-xs text-gray-400">{t('shareHistory.openStatus')}</div>
                     </div>
                     
                     {/* 心愿数 */}
@@ -493,7 +495,7 @@ const ShareHistory: React.FC = () => {
                     <div className="mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20 animate-fade-in">
                       <div className="flex items-center space-x-2 text-sm text-green-300">
                         <CheckCircle className="w-4 h-4 animate-pulse" />
-                        <span>已于 {formatDate(chain.opened_at)} 开启</span>
+                        <span>{t('shareHistory.openedAt', { date: formatDate(chain.opened_at) })}</span>
                         <div className="flex space-x-1">
                           <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                           <div className="w-1 h-1 bg-green-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
@@ -554,7 +556,7 @@ const ShareHistory: React.FC = () => {
                     ) : (
                       <div className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-gray-600/50 text-gray-400 rounded-xl cursor-not-allowed">
                         <XCircle className="w-4 h-4" />
-                        <span>盲盒已开启，链接已失效</span>
+                        <span>{t('shareHistory.blindBoxOpened')}</span>
                       </div>
                     )}
                     
@@ -569,7 +571,7 @@ const ShareHistory: React.FC = () => {
                       disabled={chain.is_opened}
                     >
                       <ExternalLink className="w-4 h-4" />
-                      <span>{chain.is_opened ? '已失效' : t('shareHistory.preview')}</span>
+                      <span>{chain.is_opened ? t('shareHistory.expired') : t('shareHistory.preview')}</span>
                     </button>
                   </div>
                 </div>
