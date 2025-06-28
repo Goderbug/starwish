@@ -497,7 +497,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
       </div>
 
       {/* Main content - 减少顶部间距，让内容更靠上 */}
-      <div className="text-center max-w-4xl mx-auto relative z-10 w-full" style={{ marginTop: '15vh' }}>
+      <div className="text-center max-w-6xl mx-auto relative z-10 w-full" style={{ marginTop: '15vh' }}>
         {/* Title area - 现在更靠近顶部 */}
         <div className="mb-6 sm:mb-8 relative">
           {/* 使用统一的Figma设计标题 */}
@@ -530,9 +530,9 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Auth required message for non-authenticated users - 只有在确定未登录时显示 */}
+        {/* Auth required message for non-authenticated users - 统一宽度 */}
         {!user && (
-          <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30">
+          <div className="mb-8 p-6 bg-purple-500/20 backdrop-blur-sm rounded-2xl border border-purple-400/30 max-w-6xl mx-auto">
             <div className="mb-4">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <GlowingDot size={32} color="#FF3EEC" brightness={1} />
@@ -596,18 +596,18 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Features showcase - 重新设计为卡片布局，修改title frame为左上对齐 */}
+        {/* Features showcase - 统一宽度，手机端自适应高度 */}
         <div className="space-y-8 sm:space-y-12 px-2 max-w-6xl mx-auto">
-          {/* 播种星愿卡片 - 缩小高度以实现切割效果 */}
+          {/* 播种星愿卡片 - 手机端自适应高度 */}
           <div className="group relative overflow-hidden">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/10 hover:border-yellow-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card relative overflow-hidden h-48 sm:h-56">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/10 hover:border-yellow-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card relative overflow-hidden min-h-[200px] sm:h-56">
               {/* 背景装饰 */}
               <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 via-orange-500/3 to-transparent rounded-3xl"></div>
               
               <div className="relative z-10 flex flex-col lg:flex-row items-start gap-6 h-full">
                 {/* 左侧：标题和描述 */}
                 <div className="flex-1 space-y-3">
-                  {/* 功能标题 - 修改为左上对齐，不使用inline-flex */}
+                  {/* 功能标题 - 左上对齐 */}
                   <div className="flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 w-fit">
                     <Wand2 className="w-5 h-5 text-white" />
                     <h3 className="text-lg sm:text-xl font-bold text-white">
@@ -633,16 +633,16 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* 编织星链卡片 - 缩小高度以实现切割效果 */}
+          {/* 编织星链卡片 - 手机端自适应高度 */}
           <div className="group relative overflow-hidden">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/10 hover:border-purple-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card relative overflow-hidden h-48 sm:h-56">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/10 hover:border-purple-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card relative overflow-hidden min-h-[200px] sm:h-56">
               {/* 背景装饰 */}
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-pink-500/3 to-transparent rounded-3xl"></div>
               
               <div className="relative z-10 flex flex-col lg:flex-row items-start gap-6 h-full">
                 {/* 左侧：标题和描述 */}
                 <div className="flex-1 space-y-3">
-                  {/* 功能标题 - 修改为左上对齐，不使用inline-flex */}
+                  {/* 功能标题 - 左上对齐 */}
                   <div className="flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 w-fit">
                     <Link className="w-5 h-5 text-white" />
                     <h3 className="text-lg sm:text-xl font-bold text-white">
@@ -668,16 +668,16 @@ const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          {/* 随机惊喜卡片 - 缩小高度以实现切割效果 */}
+          {/* 随机惊喜卡片 - 手机端自适应高度 */}
           <div className="group relative overflow-hidden">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/10 hover:border-pink-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card relative overflow-hidden h-48 sm:h-56">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/10 hover:border-pink-400/30 transition-all duration-500 group-hover:bg-white/8 feature-card relative overflow-hidden min-h-[200px] sm:h-56">
               {/* 背景装饰 */}
               <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-blue-500/3 to-transparent rounded-3xl"></div>
               
               <div className="relative z-10 flex flex-col lg:flex-row items-start gap-6 h-full">
                 {/* 左侧：标题和描述 */}
                 <div className="flex-1 space-y-3">
-                  {/* 功能标题 - 修改为左上对齐，不使用inline-flex */}
+                  {/* 功能标题 - 左上对齐 */}
                   <div className="flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 w-fit">
                     <Sparkles className="w-5 h-5 text-white" />
                     <h3 className="text-lg sm:text-xl font-bold text-white">
