@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Heart, Sparkles, Gift, Plus, ArrowRight, Wand2, Link, History, Inbox, Clock, X, Tag, Calendar } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { User } from '@supabase/supabase-js';
@@ -75,6 +75,154 @@ const GlowingDot: React.FC<{
     />
   </div>
 );
+
+// 功能插图组件
+const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; className?: string }> = ({ type, className = '' }) => {
+  switch (type) {
+    case 'sow':
+      return (
+        <div className={`relative ${className}`}>
+          {/* 播种星愿插图 */}
+          <div className="relative w-24 h-24 mx-auto">
+            {/* 中心星星 */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-pulse">
+              <Sparkles className="w-4 h-4 text-white" fill="currentColor" />
+            </div>
+            
+            {/* 围绕的小星星 */}
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-twinkle"
+                style={{
+                  left: `${50 + 35 * Math.cos((i * 60) * Math.PI / 180)}%`,
+                  top: `${50 + 35 * Math.sin((i * 60) * Math.PI / 180)}%`,
+                  animationDelay: `${i * 0.3}s`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+              />
+            ))}
+            
+            {/* 魔法粒子 */}
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={`particle-${i}`}
+                className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-float opacity-60"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      );
+      
+    case 'weave':
+      return (
+        <div className={`relative ${className}`}>
+          {/* 编织星链插图 */}
+          <div className="relative w-24 h-24 mx-auto">
+            {/* 连接的星星 */}
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 96 96">
+              {/* 连线 */}
+              <path
+                d="M20 30 L45 20 L70 35 L50 60 L25 55 Z"
+                stroke="url(#chainGradient)"
+                strokeWidth="2"
+                fill="none"
+                className="animate-pulse"
+                strokeDasharray="4,2"
+              />
+              <defs>
+                <linearGradient id="chainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#a855f7" />
+                  <stop offset="50%" stopColor="#ec4899" />
+                  <stop offset="100%" stopColor="#f59e0b" />
+                </linearGradient>
+              </defs>
+            </svg>
+            
+            {/* 星星节点 */}
+            {[
+              { x: 20, y: 30 },
+              { x: 45, y: 20 },
+              { x: 70, y: 35 },
+              { x: 50, y: 60 },
+              { x: 25, y: 55 }
+            ].map((pos, i) => (
+              <div
+                key={i}
+                className="absolute w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse"
+                style={{
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  animationDelay: `${i * 0.2}s`,
+                }}
+              />
+            ))}
+            
+            {/* 中心链接图标 */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
+              <Link className="w-3 h-3 text-white" />
+            </div>
+          </div>
+        </div>
+      );
+      
+    case 'surprise':
+      return (
+        <div className={`relative ${className}`}>
+          {/* 随机惊喜插图 */}
+          <div className="relative w-24 h-24 mx-auto">
+            {/* 盲盒 */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
+              <Gift className="w-6 h-6 text-yellow-400" />
+            </div>
+            
+            {/* 问号和惊喜元素 */}
+            {['?', '!', '✨'].map((symbol, i) => (
+              <div
+                key={i}
+                className="absolute text-lg font-bold text-yellow-400 animate-bounce"
+                style={{
+                  left: `${30 + i * 20}%`,
+                  top: `${20 + (i % 2) * 15}%`,
+                  animationDelay: `${i * 0.5}s`,
+                }}
+              >
+                {symbol}
+              </div>
+            ))}
+            
+            {/* 流星轨迹 */}
+            <div className="absolute top-2 right-2 w-8 h-1 bg-gradient-to-r from-yellow-400 to-transparent rounded-full animate-pulse opacity-70" />
+            <div className="absolute bottom-4 left-2 w-6 h-1 bg-gradient-to-r from-pink-400 to-transparent rounded-full animate-pulse opacity-70" style={{ animationDelay: '0.5s' }} />
+            
+            {/* 环绕粒子 */}
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={`surprise-particle-${i}`}
+                className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-ping"
+                style={{
+                  left: `${50 + 40 * Math.cos((i * 60) * Math.PI / 180)}%`,
+                  top: `${50 + 40 * Math.sin((i * 60) * Math.PI / 180)}%`,
+                  animationDelay: `${i * 0.3}s`,
+                  transform: 'translate(-50%, -50%)',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      );
+      
+    default:
+      return null;
+  }
+};
 
 const LandingPage: React.FC<LandingPageProps> = ({ 
   onNavigate, 
@@ -445,36 +593,81 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Features showcase */}
-        <div className="grid grid-cols-1 gap-6 sm:gap-8 px-2">
-          <div className="text-left p-6 sm:p-8 bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-400 to-purple-400 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
-              <Wand2 className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+        {/* Features showcase - 重新设计的功能卡片 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-12 px-2 max-w-6xl mx-auto">
+          {/* 播种星愿 */}
+          <div className="group relative">
+            {/* 背景装饰 */}
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-orange-500/5 to-transparent rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 sm:p-10 border border-white/10 hover:border-white/20 transition-all duration-500 group-hover:bg-white/10 group-hover:scale-105">
+              {/* 插图 */}
+              <FeatureIllustration type="sow" className="mb-8" />
+              
+              {/* 内容 */}
+              <div className="text-center space-y-4">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 group-hover:text-yellow-300 transition-colors duration-300">
+                  {t('landing.feature1.title')}
+                </h3>
+                <p className="text-gray-300 text-base sm:text-lg leading-relaxed font-light">
+                  {t('landing.feature1.desc')}
+                </p>
+              </div>
+              
+              {/* 装饰元素 */}
+              <div className="absolute top-4 right-4 w-2 h-2 bg-yellow-400 rounded-full animate-pulse opacity-60"></div>
+              <div className="absolute bottom-6 left-6 w-1 h-1 bg-orange-400 rounded-full animate-ping opacity-40"></div>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-white">{t('landing.feature1.title')}</h3>
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-              {t('landing.feature1.desc')}
-            </p>
           </div>
 
-          <div className="text-left p-6 sm:p-8 bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
-              <Link className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+          {/* 编织星链 */}
+          <div className="group relative">
+            {/* 背景装饰 */}
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 sm:p-10 border border-white/10 hover:border-white/20 transition-all duration-500 group-hover:bg-white/10 group-hover:scale-105">
+              {/* 插图 */}
+              <FeatureIllustration type="weave" className="mb-8" />
+              
+              {/* 内容 */}
+              <div className="text-center space-y-4">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 group-hover:text-purple-300 transition-colors duration-300">
+                  {t('landing.feature2.title')}
+                </h3>
+                <p className="text-gray-300 text-base sm:text-lg leading-relaxed font-light">
+                  {t('landing.feature2.desc')}
+                </p>
+              </div>
+              
+              {/* 装饰元素 */}
+              <div className="absolute top-4 right-4 w-2 h-2 bg-purple-400 rounded-full animate-pulse opacity-60"></div>
+              <div className="absolute bottom-6 left-6 w-1 h-1 bg-pink-400 rounded-full animate-ping opacity-40"></div>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-white">{t('landing.feature2.title')}</h3>
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-              {t('landing.feature2.desc')}
-            </p>
           </div>
 
-          <div className="text-left p-6 sm:p-8 bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 hover:bg-white/10 transition-all duration-300 group">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-pink-400 to-yellow-400 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
-              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+          {/* 随机惊喜 */}
+          <div className="group relative">
+            {/* 背景装饰 */}
+            <div className="absolute inset-0 bg-gradient-to-br from-pink-500/10 via-blue-500/5 to-transparent rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+            
+            <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 sm:p-10 border border-white/10 hover:border-white/20 transition-all duration-500 group-hover:bg-white/10 group-hover:scale-105">
+              {/* 插图 */}
+              <FeatureIllustration type="surprise" className="mb-8" />
+              
+              {/* 内容 */}
+              <div className="text-center space-y-4">
+                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 group-hover:text-pink-300 transition-colors duration-300">
+                  {t('landing.feature3.title')}
+                </h3>
+                <p className="text-gray-300 text-base sm:text-lg leading-relaxed font-light">
+                  {t('landing.feature3.desc')}
+                </p>
+              </div>
+              
+              {/* 装饰元素 */}
+              <div className="absolute top-4 right-4 w-2 h-2 bg-pink-400 rounded-full animate-pulse opacity-60"></div>
+              <div className="absolute bottom-6 left-6 w-1 h-1 bg-blue-400 rounded-full animate-ping opacity-40"></div>
             </div>
-            <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-white">{t('landing.feature3.title')}</h3>
-            <p className="text-gray-300 text-sm sm:text-base leading-relaxed">
-              {t('landing.feature3.desc')}
-            </p>
           </div>
         </div>
       </div>
