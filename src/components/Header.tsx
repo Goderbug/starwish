@@ -80,10 +80,10 @@ const Header: React.FC<HeaderProps> = ({
                 <User className="w-4 h-4 text-purple-400" />
               </div>
 
-              {/* Sign out button - 调整高度与语言切换器一致 */}
+              {/* Sign out button - 调整为40px直径 */}
               <button
                 onClick={handleSignOut}
-                className="p-2.5 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation"
+                className="w-10 h-10 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation flex items-center justify-center"
                 title={t('landing.signOut')}
               >
                 <LogOut className="w-4 h-4" />
