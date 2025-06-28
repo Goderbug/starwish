@@ -56,7 +56,6 @@ const translations = {
     'auth.hasAccount': '已有账户？',
     'auth.welcome': '欢迎回来',
     'auth.signInRequired': '请先登录以使用完整功能',
-    'auth.signInDescription': '登录后即可开始播种你的星愿，编织神秘的星链分享给特别的人',
 
     // Create Wish
     'create.title': '播种新的星愿',
@@ -259,7 +258,6 @@ const translations = {
     'auth.hasAccount': 'Already have an account?',
     'auth.welcome': 'Welcome back',
     'auth.signInRequired': 'Please sign in to use full features',
-    'auth.signInDescription': 'After signing in, you can start sowing your star wishes and weave mysterious star chains to share with special people',
 
     // Create Wish
     'create.title': 'Sow a New Star Wish',
