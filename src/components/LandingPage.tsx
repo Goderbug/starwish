@@ -596,7 +596,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         )}
 
-        {/* Features showcase - 重新设计为卡片布局，修改为新的设计要求 */}
+        {/* Features showcase - 重新设计为卡片布局，修改title frame为左上对齐 */}
         <div className="space-y-8 sm:space-y-12 px-2 max-w-6xl mx-auto">
           {/* 播种星愿卡片 - 缩小高度以实现切割效果 */}
           <div className="group relative overflow-hidden">
@@ -607,8 +607,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
               <div className="relative z-10 flex flex-col lg:flex-row items-start gap-6 h-full">
                 {/* 左侧：标题和描述 */}
                 <div className="flex-1 space-y-3">
-                  {/* 功能标题 - 恢复frame背景 */}
-                  <div className="inline-flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                  {/* 功能标题 - 修改为左上对齐，不使用inline-flex */}
+                  <div className="flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 w-fit">
                     <Wand2 className="w-5 h-5 text-white" />
                     <h3 className="text-lg sm:text-xl font-bold text-white">
                       {t('landing.feature1.title')}
@@ -642,8 +642,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
               <div className="relative z-10 flex flex-col lg:flex-row items-start gap-6 h-full">
                 {/* 左侧：标题和描述 */}
                 <div className="flex-1 space-y-3">
-                  {/* 功能标题 - 恢复frame背景 */}
-                  <div className="inline-flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                  {/* 功能标题 - 修改为左上对齐，不使用inline-flex */}
+                  <div className="flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 w-fit">
                     <Link className="w-5 h-5 text-white" />
                     <h3 className="text-lg sm:text-xl font-bold text-white">
                       {t('landing.feature2.title')}
@@ -677,8 +677,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
               <div className="relative z-10 flex flex-col lg:flex-row items-start gap-6 h-full">
                 {/* 左侧：标题和描述 */}
                 <div className="flex-1 space-y-3">
-                  {/* 功能标题 - 恢复frame背景 */}
-                  <div className="inline-flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20">
+                  {/* 功能标题 - 修改为左上对齐，不使用inline-flex */}
+                  <div className="flex items-center space-x-3 bg-black/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/20 w-fit">
                     <Sparkles className="w-5 h-5 text-white" />
                     <h3 className="text-lg sm:text-xl font-bold text-white">
                       {t('landing.feature3.title')}
