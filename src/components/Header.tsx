@@ -132,15 +132,19 @@ const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Bolt.new Badge */}
+          {/* Bolt.new Badge with Custom Image */}
           <a 
             href="https://bolt.new/" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center justify-center h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="flex items-center justify-center h-10 w-10 rounded-full hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl"
             title="Built with Bolt.new"
           >
-            <div className="text-white font-bold text-xs">⚡</div>
+            <img 
+              src="/white_circle_360x360 copy copy copy.png" 
+              alt="Built with Bolt.new" 
+              className="w-10 h-10 rounded-full object-cover"
+            />
           </a>
         </div>
       </div>
