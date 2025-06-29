@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center justify-between p-4 sm:p-6">
         {/* Left side - Logo and Back button */}
         <div className="flex items-center space-x-4">
-          {/* Logo */}
+          {/* Logo - 更新尺寸：桌面端80px，移动端64px */}
           <div className="flex items-center">
             <svg 
               width="222" 
@@ -52,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({
               viewBox="0 0 222 80" 
               fill="none" 
               xmlns="http://www.w3.org/2000/svg"
-              className="h-8 sm:h-10 w-auto transition-all duration-300"
+              className="h-16 sm:h-20 w-auto transition-all duration-300"
             >
               <g style={{mixBlendMode: 'color-dodge'}}>
                 <rect width="8.33333" height="80" transform="translate(35.8333)" fill="black"/>
