@@ -76,60 +76,43 @@ const GlowingDot: React.FC<{
   </div>
 );
 
-// 功能插图组件 - 优化动画设计
+// 功能插图组件 - 放大尺寸并添加被裁切效果
 const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; className?: string }> = ({ type, className = '' }) => {
   switch (type) {
     case 'sow':
       return (
         <div className={`relative ${className}`}>
-          {/* 播种星愿插图 - 流星从右上往左下划过 */}
+          {/* 播种星愿插图 - 放大到 w-40 h-40 */}
           <div className="relative w-40 h-40 mx-auto">
             {/* 中心星星 */}
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full flex items-center justify-center animate-pulse">
               <Sparkles className="w-6 h-6 text-white" fill="currentColor" />
             </div>
             
-            {/* 流星轨迹 - 从右上往左下 */}
-            <div className="absolute inset-0 overflow-hidden">
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={`meteor-${i}`}
-                  className="absolute w-20 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent rounded-full animate-meteor"
-                  style={{
-                    top: `${10 + i * 25}%`,
-                    right: '100%',
-                    animationDelay: `${i * 1.5}s`,
-                    animationDuration: '3s',
-                    transform: 'rotate(45deg)',
-                  }}
-                />
-              ))}
-            </div>
-            
-            {/* 流星尾迹粒子 */}
-            {[...Array(12)].map((_, i) => (
+            {/* 围绕的小星星 */}
+            {[...Array(8)].map((_, i) => (
               <div
-                key={`trail-${i}`}
-                className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-meteor-trail"
+                key={i}
+                className="absolute w-4 h-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-twinkle"
                 style={{
-                  top: `${20 + (i % 3) * 20}%`,
-                  right: `${80 + (i % 4) * 5}%`,
-                  animationDelay: `${(i * 0.3) + 0.5}s`,
-                  animationDuration: '2s',
+                  left: `${50 + 40 * Math.cos((i * 45) * Math.PI / 180)}%`,
+                  top: `${50 + 40 * Math.sin((i * 45) * Math.PI / 180)}%`,
+                  animationDelay: `${i * 0.3}s`,
+                  transform: 'translate(-50%, -50%)',
                 }}
               />
             ))}
             
-            {/* 环绕的小星星 */}
-            {[...Array(6)].map((_, i) => (
+            {/* 魔法粒子 */}
+            {[...Array(20)].map((_, i) => (
               <div
-                key={i}
-                className="absolute w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-twinkle"
+                key={`particle-${i}`}
+                className="absolute w-1.5 h-1.5 bg-yellow-300 rounded-full animate-float opacity-60"
                 style={{
-                  left: `${50 + 35 * Math.cos((i * 60) * Math.PI / 180)}%`,
-                  top: `${50 + 35 * Math.sin((i * 60) * Math.PI / 180)}%`,
-                  animationDelay: `${i * 0.5}s`,
-                  transform: 'translate(-50%, -50%)',
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${2 + Math.random() * 2}s`,
                 }}
               />
             ))}
@@ -140,87 +123,51 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
     case 'weave':
       return (
         <div className={`relative ${className}`}>
-          {/* 编织星链插图 - 北斗七星星座图样 */}
+          {/* 编织星链插图 - 放大到 w-40 h-40 */}
           <div className="relative w-40 h-40 mx-auto">
-            {/* 北斗七星的位置 */}
+            {/* 连接的星星 */}
             <svg className="absolute inset-0 w-full h-full" viewBox="0 0 160 160">
-              {/* 连线 - 带流光效果 */}
+              {/* 连线 */}
+              <path
+                d="M30 45 L65 30 L95 50 L70 90 L40 75 Z"
+                stroke="url(#chainGradient)"
+                strokeWidth="4"
+                fill="none"
+                className="animate-pulse"
+                strokeDasharray="8,4"
+              />
               <defs>
-                <linearGradient id="flowingGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="transparent" />
-                  <stop offset="30%" stopColor="#FF3EEC" />
-                  <stop offset="70%" stopColor="#FFAB3E" />
-                  <stop offset="100%" stopColor="transparent" />
-                  <animateTransform
-                    attributeName="gradientTransform"
-                    type="translate"
-                    values="-100 0;200 0;-100 0"
-                    dur="3s"
-                    repeatCount="indefinite"
-                  />
+                <linearGradient id="chainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FF3EEC" />
+                  <stop offset="50%" stopColor="#FFAB3E" />
+                  <stop offset="100%" stopColor="#FF3EEC" />
                 </linearGradient>
               </defs>
-              
-              {/* 北斗七星连线 */}
-              <path
-                d="M30 60 L50 45 L70 50 L90 40 L110 55 L95 75 L75 80 Z"
-                stroke="url(#flowingGradient)"
-                strokeWidth="3"
-                fill="none"
-                strokeDasharray="4,2"
-                className="animate-pulse"
-              />
-              
-              {/* 额外的流光线条 */}
-              <path
-                d="M30 60 L50 45 L70 50 L90 40"
-                stroke="#FF3EEC"
-                strokeWidth="2"
-                fill="none"
-                opacity="0.6"
-                strokeDasharray="8,4"
-                className="animate-constellation-flow"
-              />
-              <path
-                d="M90 40 L110 55 L95 75 L75 80"
-                stroke="#FFAB3E"
-                strokeWidth="2"
-                fill="none"
-                opacity="0.6"
-                strokeDasharray="8,4"
-                className="animate-constellation-flow"
-                style={{ animationDelay: '1.5s' }}
-              />
             </svg>
             
-            {/* 北斗七星星星节点 */}
+            {/* 星星节点 */}
             {[
-              { x: 30, y: 60, size: 6 },
-              { x: 50, y: 45, size: 5 },
-              { x: 70, y: 50, size: 7 },
-              { x: 90, y: 40, size: 6 },
-              { x: 110, y: 55, size: 5 },
-              { x: 95, y: 75, size: 6 },
-              { x: 75, y: 80, size: 5 }
-            ].map((star, i) => (
+              { x: 30, y: 45 },
+              { x: 65, y: 30 },
+              { x: 95, y: 50 },
+              { x: 70, y: 90 },
+              { x: 40, y: 75 }
+            ].map((pos, i) => (
               <div
                 key={i}
-                className="absolute rounded-full animate-star-pulse"
+                className="absolute w-5 h-5 rounded-full animate-pulse"
                 style={{
-                  left: `${star.x}%`,
-                  top: `${star.y}%`,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
                   transform: 'translate(-50%, -50%)',
-                  animationDelay: `${i * 0.3}s`,
+                  animationDelay: `${i * 0.2}s`,
                   backgroundColor: i % 2 === 0 ? '#FF3EEC' : '#FFAB3E',
-                  boxShadow: `0 0 ${star.size * 2}px ${i % 2 === 0 ? '#FF3EEC' : '#FFAB3E'}`,
                 }}
               />
             ))}
             
             {/* 中心链接图标 */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center animate-pulse">
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full flex items-center justify-center">
               <Link className="w-5 h-5 text-white" />
             </div>
           </div>
@@ -230,11 +177,11 @@ const FeatureIllustration: React.FC<{ type: 'sow' | 'weave' | 'surprise'; classN
     case 'surprise':
       return (
         <div className={`relative ${className}`}>
-          {/* 随机惊喜插图 - 去掉礼物盒的frame边框和背景 */}
+          {/* 随机惊喜插图 - 放大到 w-40 h-40 */}
           <div className="relative w-40 h-40 mx-auto">
-            {/* 礼物盒 - 移除边框和背景 */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 flex items-center justify-center">
-              <Gift className="w-12 h-12 text-yellow-400 animate-bounce" />
+            {/* 盲盒 */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-lg border-2 border-white/30 backdrop-blur-sm flex items-center justify-center">
+              <Gift className="w-10 h-10 text-yellow-400" />
             </div>
             
             {/* 问号和惊喜元素 */}
