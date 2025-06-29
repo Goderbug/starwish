@@ -217,7 +217,7 @@ const ReceivedWishes: React.FC = () => {
                       {/* Favorite button */}
                       <button
                         onClick={() => toggleFavorite(openedWish.id, openedWish.is_favorite)}
-                        className={`p-2 rounded-full transition-all ${
+                        className={`p-2 rounded-full transition-all h-10 w-10 flex items-center justify-center ${
                           openedWish.is_favorite
                             ? 'text-red-400 bg-red-400/20'
                             : 'text-gray-400 hover:text-red-400 hover:bg-red-400/10'
@@ -269,7 +269,7 @@ const ReceivedWishes: React.FC = () => {
                         {!isEditingThisNote && (
                           <button
                             onClick={() => startEditingNotes(openedWish.id, openedWish.notes)}
-                            className="flex items-center space-x-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                            className="flex items-center space-x-1 text-xs text-purple-400 hover:text-purple-300 transition-colors h-8 px-2 rounded-lg hover:bg-purple-400/10"
                           >
                             <Edit3 className="w-3 h-3" />
                             <span>{t('common.edit')}</span>
@@ -297,7 +297,7 @@ const ReceivedWishes: React.FC = () => {
                             <button
                               onClick={() => saveNotes(openedWish.id)}
                               disabled={isSavingThisNote}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white rounded-lg transition-all text-xs font-medium"
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-green-500 hover:bg-green-600 disabled:bg-green-500/50 text-white rounded-lg transition-all text-xs font-medium h-8"
                             >
                               {isSavingThisNote ? (
                                 <>
@@ -315,7 +315,7 @@ const ReceivedWishes: React.FC = () => {
                             <button
                               onClick={() => cancelEditingNotes(openedWish.id)}
                               disabled={isSavingThisNote}
-                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600/50 text-white rounded-lg transition-all text-xs font-medium"
+                              className="flex items-center space-x-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600/50 text-white rounded-lg transition-all text-xs font-medium h-8"
                             >
                               <X className="w-3 h-3" />
                               <span>{t('common.cancel')}</span>

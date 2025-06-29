@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, LogIn, LogOut, User } from 'lucide-react';
+import { ArrowLeft, LogIn, LogOut, User, ExternalLink } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../contexts/LanguageContext';
 import { signOut } from '../lib/supabase';
@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
                 viewBox="0 0 218 48" 
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-[40px] sm:h-[48px] w-auto transition-all duration-300"
+                className="h-[40px] sm:h-[40px] w-auto transition-all duration-300"
               >
                 <path d="M17.8564 23.0201V22.9832" stroke="white" strokeWidth="4.90182" strokeLinecap="round"/>
                 <path d="M28.6447 22.7778V22.8142" stroke="white" strokeWidth="4.90182" strokeLinecap="round"/>
@@ -79,9 +79,9 @@ const Header: React.FC<HeaderProps> = ({
           {showBackButton && onBack && (
             <button
               onClick={onBack}
-              className="p-3 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors touch-manipulation"
+              className="p-3 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors touch-manipulation h-10 w-10 flex items-center justify-center"
             >
-              <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -89,18 +89,18 @@ const Header: React.FC<HeaderProps> = ({
         {/* Center - Empty space for better balance */}
         <div className="flex-1"></div>
 
-        {/* Right side - Language switcher and Auth components */}
+        {/* Right side - Language switcher, Auth components, and Bolt badge */}
         <div className="flex items-center space-x-3">
           {/* Language switcher */}
           <LanguageSwitcher />
 
           {/* Auth section */}
           {loading ? (
-            <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-2 border-purple-400 border-t-transparent rounded-full animate-spin flex items-center justify-center"></div>
           ) : user ? (
             <div className="flex items-center space-x-3">
               {/* User info */}
-              <div className="hidden sm:flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2">
+              <div className="hidden sm:flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-3 py-2 h-10">
                 <User className="w-4 h-4 text-purple-400" />
                 <span className="text-sm font-medium text-white max-w-32 truncate">
                   {user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0]}
@@ -108,14 +108,14 @@ const Header: React.FC<HeaderProps> = ({
               </div>
               
               {/* Mobile user indicator */}
-              <div className="sm:hidden w-8 h-8 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <div className="sm:hidden w-10 h-10 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-purple-400" />
               </div>
 
               {/* Sign out button */}
               <button
                 onClick={handleSignOut}
-                className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation"
+                className="p-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 rounded-full transition-colors touch-manipulation h-10 w-10 flex items-center justify-center"
                 title={t('landing.signOut')}
               >
                 <LogOut className="w-4 h-4" />
@@ -125,12 +125,23 @@ const Header: React.FC<HeaderProps> = ({
             /* Sign in button */
             <button
               onClick={handleSignIn}
-              className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full px-4 py-2 transition-all touch-manipulation"
+              className="flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-full px-4 py-2 transition-all touch-manipulation h-10"
             >
               <LogIn className="w-4 h-4" />
               <span className="hidden sm:inline text-sm font-medium">{t('landing.signIn')}</span>
             </button>
           )}
+
+          {/* Bolt.new Badge */}
+          <a 
+            href="https://bolt.new/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center justify-center h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+            title="Built with Bolt.new"
+          >
+            <div className="text-white font-bold text-xs">⚡</div>
+          </a>
         </div>
       </div>
     </header>
