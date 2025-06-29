@@ -612,8 +612,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
                     </h3>
                   </div>
                   
-                  {/* 描述文本 - 适当增大字号 */}
-                  <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-medium text-left max-w-2xl">
+                  {/* 描述文本 - 适当增大字号并加粗 */}
+                  <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-semibold text-left max-w-2xl">
                     {t('landing.feature1.desc')}
                   </p>
                 </div>
@@ -647,8 +647,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
                     </h3>
                   </div>
                   
-                  {/* 描述文本 - 适当增大字号 */}
-                  <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-medium text-left max-w-2xl">
+                  {/* 描述文本 - 适当增大字号并加粗 */}
+                  <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-semibold text-left max-w-2xl">
                     {t('landing.feature2.desc')}
                   </p>
                 </div>
@@ -682,8 +682,8 @@ const LandingPage: React.FC<LandingPageProps> = ({
                     </h3>
                   </div>
                   
-                  {/* 描述文本 - 适当增大字号 */}
-                  <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-medium text-left max-w-2xl">
+                  {/* 描述文本 - 适当增大字号并加粗 */}
+                  <p className="text-gray-300 text-lg sm:text-xl lg:text-2xl leading-relaxed font-semibold text-left max-w-2xl">
                     {t('landing.feature3.desc')}
                   </p>
                 </div>
