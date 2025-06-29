@@ -9,8 +9,8 @@ interface Language {
 }
 
 const languages: Language[] = [
+  { code: 'en', name: 'English', nativeName: 'English' }, // 英语优先级最高
   { code: 'zh', name: 'Chinese', nativeName: '中文' },
-  { code: 'en', name: 'English', nativeName: 'English' },
   { code: 'ja', name: 'Japanese', nativeName: '日本語' },
   { code: 'ko', name: 'Korean', nativeName: '한국어' },
   { code: 'es', name: 'Spanish', nativeName: 'Español' },
@@ -24,7 +24,7 @@ const LanguageSwitcher: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentLanguage = languages.find(lang => lang.code === language) || languages[0];
-  const availableLanguages = languages.filter(lang => lang.code === 'zh' || lang.code === 'en'); // Currently only support zh and en
+  const availableLanguages = languages.filter(lang => lang.code === 'en' || lang.code === 'zh'); // 英语和中文
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

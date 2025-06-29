@@ -418,18 +418,16 @@ const translations = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<SupportedLanguage>('zh');
+  // 默认语言改为英文
+  const [language, setLanguage] = useState<SupportedLanguage>('en');
 
   useEffect(() => {
     const savedLanguage = localStorage.getItem('starwish-language') as SupportedLanguage;
     if (savedLanguage && (savedLanguage === 'zh' || savedLanguage === 'en')) {
       setLanguage(savedLanguage);
     } else {
-      // Auto-detect browser language
-      const browserLang = navigator.language.toLowerCase();
-      if (browserLang.startsWith('en')) {
-        setLanguage('en');
-      }
+      // 默认使用英文，不再自动检测浏览器语言
+      setLanguage('en');
     }
   }, []);
 
