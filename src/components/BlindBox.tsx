@@ -49,15 +49,15 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         console.error('❌ 获取星链失败:', chainError);
         
         if (chainError.code === 'PGRST116') {
-          setError('这个星愿盲盒不存在或已失效');
+          setError(t('blindbox.chainNotFound'));
         } else {
-          setError('获取星链失败，请重试');
+          setError(t('blindbox.fetchError'));
         }
         return;
       }
 
       if (!chainData) {
-        setError('星链不存在或已失效');
+        setError(t('blindbox.chainNotFound'));
         return;
       }
 
@@ -77,13 +77,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       
       // 检查是否过期
       if (chainData.expires_at && new Date(chainData.expires_at) < now) {
-        setError('星链已过期');
+        setError(t('blindbox.expired'));
         return;
       }
 
       // 检查是否处于活跃状态
       if (!chainData.is_active) {
-        setError('星链未激活');
+        setError(t('blindbox.inactive'));
         return;
       }
 
@@ -97,14 +97,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       if (wishesError) {
         console.error('❌ 获取星愿失败:', wishesError);
-        setError('获取星愿失败，请重试');
+        setError(t('blindbox.fetchWishesError'));
         return;
       }
 
       const wishes = wishesData?.map((item: any) => item.wish).filter(Boolean) || [];
 
       if (wishes.length === 0) {
-        setError('星链中没有星愿');
+        setError(t('blindbox.noWishes'));
         return;
       }
 
@@ -135,7 +135,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
     } catch (error: any) {
       console.error('❌ 获取星链数据失败:', error);
-      setError('获取星链失败，请重试');
+      setError(t('blindbox.fetchError'));
     } finally {
       setComponentLoading(false);
     }
@@ -160,13 +160,13 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
     }
 
     if (!starChain || !starChain.wishes || starChain.wishes.length === 0) {
-      setError('没有可用的星愿');
+      setError(t('blindbox.noWishes'));
       return;
     }
 
     // ✅ 严格检查：如果已经开启，不允许再次开启
     if (starChain.is_opened) {
-      setError('这个星愿盲盒已经被开启过了');
+      setError(t('blindbox.alreadyOpened'));
       return;
     }
     
@@ -204,11 +204,11 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           
           // 检查是否是权限问题
           if (updateChainError.code === '42501') {
-            throw new Error('权限不足，请重新登录后重试');
+            throw new Error(t('blindbox.permissionDenied'));
           } else if (updateChainError.message?.includes('row-level security')) {
-            throw new Error('访问被拒绝，可能星链已失效');
+            throw new Error(t('blindbox.accessDenied'));
           } else {
-            throw new Error('更新星链状态失败：' + updateChainError.message);
+            throw new Error(t('blindbox.updateFailed') + updateChainError.message);
           }
         }
 
@@ -221,9 +221,9 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             .single();
 
           if (currentChain?.is_opened) {
-            throw new Error('这个盲盒已经被其他人开启了');
+            throw new Error(t('blindbox.openedByOthers'));
           } else {
-            throw new Error('开启失败，星链状态未更新，请重试');
+            throw new Error(t('blindbox.openFailed'));
           }
         }
 
@@ -281,7 +281,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
 
       } catch (recordError: any) {
         console.error('❌ 数据库操作失败:', recordError);
-        setError('开启失败：' + recordError.message);
+        setError(t('blindbox.openFailed') + recordError.message);
         setIsOpening(false);
         setOpeningAttempted(false);
         return;
@@ -291,7 +291,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       
     } catch (error: any) {
       console.error('❌ 打开盲盒失败:', error);
-      setError('打开盲盒失败：' + error.message);
+      setError(t('blindbox.openFailed') + error.message);
       setOpeningAttempted(false);
     } finally {
       setIsOpening(false);
@@ -310,7 +310,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-300">加载中...</p>
+          <p className="text-gray-300">{t('blindbox.loading')}</p>
         </div>
       </div>
     );
@@ -324,16 +324,16 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             <Star className="w-14 h-14 sm:w-16 sm:h-16 text-gray-400" />
           </div>
           <h2 className="text-xl sm:text-2xl font-bold mb-2 text-gray-300">
-            {error?.includes('已经被开启') ? '盲盒已开启' : '星链已失效'}
+            {error?.includes(t('blindbox.alreadyOpened')) ? t('blindbox.boxOpened') : t('blindbox.chainExpired')}
           </h2>
           <p className="text-gray-400 mb-6 text-sm sm:text-base">
-            {error || '这个星链已过期或无效'}
+            {error || t('blindbox.chainInvalid')}
           </p>
           <button
             onClick={onBack}
             className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl transition-colors touch-manipulation"
           >
-            返回
+            {t('common.back')}
           </button>
         </div>
       </div>
@@ -380,8 +380,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             ))}
           </div>
 
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-pulse">✨ 流星划过夜空 ✨</h2>
-          <p className="text-lg sm:text-xl text-gray-300 animate-pulse">流星正在穿越夜空...</p>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-4 animate-pulse">✨ {t('blindbox.opening')} ✨</h2>
+          <p className="text-lg sm:text-xl text-gray-300 animate-pulse">{t('blindbox.openingDesc')}</p>
           
           {/* Progress indication */}
           <div className="mt-8 flex justify-center space-x-2">
@@ -410,8 +410,8 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
               <Star className="w-10 h-10 sm:w-12 sm:h-12 text-white animate-pulse" fill="currentColor" />
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 animate-ping opacity-20"></div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2">🌟 流星馈赠 🌟</h1>
-            <p className="text-gray-300 text-sm sm:text-base">流星礼物已经到达</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">🌟 {t('blindbox.giftTitle')} 🌟</h1>
+            <p className="text-gray-300 text-sm sm:text-base">{t('blindbox.giftDesc')}</p>
           </div>
 
           {/* Selected wish card */}
@@ -478,7 +478,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 border border-purple-400/30">
             <Wand2 className="w-6 h-6 sm:w-8 sm:h-8 text-purple-400 mx-auto mb-3" />
             <p className="text-purple-200 text-sm">
-              在所有星愿中，这一颗被幸运选中了！其他的星愿依然静静地在夜空中闪烁着...
+              {t('blindbox.mysteryMessage')}
             </p>
           </div>
 
@@ -486,9 +486,9 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 rounded-2xl p-6 mb-6 border border-green-400/30">
             <div className="mb-4">
               <UserPlus className="w-8 h-8 text-green-400 mx-auto mb-3" />
-              <h3 className="text-lg font-bold mb-2 text-white">星愿已保存到你的收藏</h3>
+              <h3 className="text-lg font-bold mb-2 text-white">{t('blindbox.savedToCollection')}</h3>
               <p className="text-green-200 text-sm">
-                这个美好的星愿已经永久保存在你的账户中，你可以在"收到的星愿"页面查看所有收藏！
+                {t('blindbox.savedDesc')}
               </p>
             </div>
           </div>
@@ -498,7 +498,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             onClick={onBack}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-4 sm:py-5 rounded-xl transition-all text-lg font-semibold touch-manipulation min-h-[56px]"
           >
-            完成
+            {t('blindbox.doneButton')}
           </button>
         </div>
       </div>
@@ -513,10 +513,10 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           {/* Header */}
           <div className="mb-8 sm:mb-12">
             <h1 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent">
-              ✨ 星愿盲盒 ✨
+              ✨ {t('blindbox.title')} ✨
             </h1>
             <p className="text-gray-400 text-sm sm:text-base">
-              有人为你准备了 {starChain.wishes?.length || 0} 个神秘星愿
+              {t('blindbox.prepared')} {starChain.wishes?.length || 0} {t('blindbox.mysterousWishes')}
             </p>
           </div>
 
@@ -574,12 +574,12 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl p-6 mb-8 border border-blue-400/30">
             <div className="mb-4">
               <LogIn className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-              <h3 className="text-lg font-bold mb-2 text-white">需要登录才能开启星愿盲盒</h3>
+              <h3 className="text-lg font-bold mb-2 text-white">{t('blindbox.loginRequired')}</h3>
               <p className="text-blue-200 text-sm mb-4">
-                为了确保这个珍贵的星愿能够安全地保存到你的收藏中，请先登录或注册账户。
+                {t('blindbox.loginDesc')}
               </p>
               <p className="text-blue-300 text-xs">
-                💫 登录后，这个盲盒将永远属于你，其他人无法再次开启
+                💫 {t('blindbox.loginNote')}
               </p>
             </div>
             
@@ -588,14 +588,14 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
               className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all touch-manipulation font-medium flex items-center justify-center space-x-2"
             >
               <LogIn className="w-4 h-4" />
-              <span>登录开启星愿盲盒</span>
+              <span>{t('blindbox.loginToOpen')}</span>
             </button>
           </div>
 
           {/* One-time use warning */}
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20 mb-6">
             <p className="text-sm text-red-300">
-              ⚠️ 每个星愿盲盒只能开启一次，开启后链接将失效
+              ⚠️ {t('blindbox.oneTimeUse')}
             </p>
           </div>
 
@@ -604,7 +604,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
             onClick={onBack}
             className="w-full bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-xl transition-all touch-manipulation"
           >
-            返回首页
+            {t('blindbox.goBack')}
           </button>
         </div>
 
@@ -626,10 +626,10 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         {/* Header */}
         <div className="mb-8 sm:mb-12">
           <h1 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-purple-300 via-pink-300 to-yellow-300 bg-clip-text text-transparent">
-            ✨ 星愿盲盒 ✨
+            ✨ {t('blindbox.title')} ✨
           </h1>
           <p className="text-gray-400 text-sm sm:text-base">
-            有人为你准备了 {starChain.wishes?.length || 0} 个神秘星愿
+            {t('blindbox.prepared')} {starChain.wishes?.length || 0} {t('blindbox.mysterousWishes')}
           </p>
         </div>
 
@@ -687,21 +687,21 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
         <div className="mb-6 sm:mb-8 space-y-4 px-2">
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
             <p className="text-sm text-yellow-400">
-              ⭐ 只有一个星愿会被随机选中哦！
+              ⭐ {t('blindbox.selectHint')}
             </p>
           </div>
           
           {/* One-time use warning */}
           <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-4 border border-red-400/20">
             <p className="text-sm text-red-300">
-              ⚠️ 每个星愿盲盒只能开启一次，开启后链接将失效
+              ⚠️ {t('blindbox.oneTimeUse')}
             </p>
           </div>
 
           {/* User info */}
           <div className="bg-green-500/10 backdrop-blur-sm rounded-2xl p-4 border border-green-400/20">
             <p className="text-sm text-green-300">
-              ✅ 已登录：{user.user_metadata?.full_name || user.email?.split('@')[0]}
+              ✅ {t('blindbox.loggedInAs')}: {user.user_metadata?.full_name || user.email?.split('@')[0]}
             </p>
           </div>
         </div>
@@ -715,7 +715,7 @@ const BlindBox: React.FC<BlindBoxProps> = ({ boxId, onBack }) => {
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -skew-x-12 animate-shimmer"></div>
           <Star className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-spin relative z-10" fill="currentColor" />
           <span className="relative z-10">
-            {starChain.is_opened ? '已开启' : openingAttempted ? '开启中...' : '开启盲盒'}
+            {starChain.is_opened ? t('blindbox.opened') : openingAttempted ? t('blindbox.opening') : t('blindbox.openButton')}
           </span>
           <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 group-hover:animate-pulse relative z-10" />
         </button>
