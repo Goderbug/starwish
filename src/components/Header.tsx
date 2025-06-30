@@ -51,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
                 viewBox="0 0 218 48" 
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-[36px] w-auto transition-all duration-300"
+                className="h-[40px] sm:h-[40px] w-auto transition-all duration-300"
               >
                 <path d="M17.8564 23.0201V22.9832" stroke="white" strokeWidth="4.90182" strokeLinecap="round"/>
                 <path d="M28.6447 22.7778V22.8142" stroke="white" strokeWidth="4.90182" strokeLinecap="round"/>
